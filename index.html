@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+
+</head>
+<body>
+<h1>Hello World!</h1>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    var socket = io.connect('http://localhost:4200');
+    // Add a connect listener
+    socket.on('connect',function() {
+        alert('Client has connected to the server!');
+    });
+    // Add a connect listener
+    socket.on('serverMessage',function(data) {
+        alert('Received a message from the server!' + data);
+    });
+    // Add a disconnect listener
+    socket.on('disconnect',function() {
+        alert('The client has disconnected!');
+    });
+
+    // Sends a message to the server via sockets
+    function sendMessageToServer(message) {
+        socket.emit('clientMessage', message);
+    };
+</script>
+</body>
+</html>

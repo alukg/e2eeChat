@@ -1,0 +1,21 @@
+{
+  "name": "e2eeserver",
+  "version": "1.0.0",
+  "description": "E2EEServer",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/alukg/e2eeChat.git"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Guy Aluk",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.16.3",
+    "mongodb": "^3.0.4",
+    "node-forge": "^0.7.4",
+    "socket.io": "^2.0.4"
+  }
+}
