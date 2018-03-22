@@ -77,8 +77,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
 <script src="/bootstrap/dist/js/bootstrap.js"></script>
 <script>
-    function connect(username,pass) {
-        var socket = io.connect('http://localhost:4200', {query: 'name=' + username + '&' + 'pass=' + pass});
+    function connect(username,pass,sts) {
+        var socket = io.connect('http://localhost:4200', {query: 'sts=' + sts + '&' + 'name=' + username + '&' + 'pass=' + pass});
         // Add a connect listener
         socket.on('connect', function () {
             alert('Client has connected to the server!');
@@ -102,6 +102,9 @@
 <!-- signup and signin script -->
 
 <script>
+    var FuncSts = {"signin":1, "signup":2}
+    Object.freeze(FuncSts);
+
     $(document).ready(function () {
         $("#upPassword, #confirmPassword").keyup(checkPasswordMatch);
     });
@@ -113,32 +116,58 @@
         if(password == "" && confirmPassword == "")
         {
             $("#divCheckPasswordMatch").html("");
+            return false;
         }
         else
         {
-            if (password != confirmPassword)
+            if (password != confirmPassword) {
                 $("#divCheckPasswordMatch").html("Passwords do not match!");
-            else
+                return false;
+            }
+            else {
                 $("#divCheckPasswordMatch").html("Passwords match.");
+                return true;
+            }
         }
     }
 
-    function processForm(e) {
+    function processSignInForm(e) {
         if (e.preventDefault) e.preventDefault();
 
         var username = $("#inEmail").val();
         var password = $("#inPassword").val();
 
-        connect(username,password);
+        connect(username,password,FuncSts.signin);
 
         return false;
     }
 
-    var form = document.getElementById('signin');
-    if (form.attachEvent) {
-        form.attachEvent("submit", processForm);
+    var signInForm = document.getElementById('signin');
+    if (signInForm.attachEvent) {
+        signInForm.attachEvent("submit", processSignInForm);
     } else {
-        form.addEventListener("submit", processForm);
+        signInForm.addEventListener("submit", processSignInForm);
+    }
+
+    function processSignUpForm(e) {
+        if (e.preventDefault) e.preventDefault();
+
+        if (checkPasswordMatch() === false)
+            return false;
+
+        var username = $("#upEmail").val();
+        var password = $("#upPassword").val();
+
+        connect(username,password,FuncSts.signup);
+
+        return false;
+    }
+
+    var signUpForm = document.getElementById('signup');
+    if (signUpForm.attachEvent) {
+        signUpForm.attachEvent("submit", processSignUpForm);
+    } else {
+        signUpForm.addEventListener("submit", processSignUpForm);
     }
 </script>
 
