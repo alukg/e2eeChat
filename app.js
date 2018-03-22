@@ -6,31 +6,31 @@ var express = require('express');
 var app = express();
 var server = require('http').createServer(app);
 var io = require('socket.io')(server);
-var MongoClient = require('mongodb').MongoClient;
 
 app.use(express.static(__dirname + '/node_modules'));
-app.get('/', function(req, res,next) {
-    res.sendFile(__dirname + '/index.html');
-});
-
-// Connect to the db
-MongoClient.connect("mongodb://localhost:27017/MyDb", function (err, db) {
-
-    if(err) throw err;
-
-
-
-});
 
 io.on('connection', function(client) {
-    console.log('Client connected...');
+    var username = client.handshake.query.name;
+    var pass = client.handshake.query.pass;
 
-    client.emit('serverMessage', client.id + 'Hello from server');
+    checkIfUserAndPassOk(username,pass).then(function(result) {
+        return doSomethingElse(result);
+    }).catch(failureCallback);
 
-    client.on('clientMessage', function (data) {
-        console.log(data);
-        client.emit('serverMessage', 'Hello from server');
-    });
+    if (checkIfUserAndPassOk(username,pass)) {
+
+        console.log('Client connected...');
+
+        //client.emit('serverMessage', client.id + 'Hello from server');
+
+        client.on('clientMessage', function (data) {
+            console.log(data);
+            client.emit('serverMessage', 'Hello from server');
+        });
+    }
+    else{
+
+    }
 });
 
 server.listen(4200);
