@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="node_modules/bootstrap/dist/css/bootstrap.css">
+    <link rel="stylesheet" href="style.css">
+
+    <title>Encrypted End-To-End Chat</title>
+</head>
+<body>
+
+<div class="login-page">
+    <div class="form">
+        <form class="login-form" action="/login" method="post">
+            <fieldset>
+                <input type="email" name="email" id="inEmail" class="form-control input-lg" placeholder="Email Address">
+                <input type="password" name="pass" id="inPassword" class="form-control input-lg" placeholder="Password">
+                <button type="submit">login</button>
+            </fieldset>
+            <p class="message">Not registered? <a href="signup">Create an account</a></p>
+        </form>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+<script src="node_modules/bootstrap/dist/js/bootstrap.js"></script>
+
+</body>
+</html>

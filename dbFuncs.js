@@ -10,7 +10,7 @@ const fs = require('fs')
 module.exports = {createUser,checkIfUserAndPassOk,getUsersList};
 
 function createUser(username,pass) {
-    var query = (db) => {
+    let query = (db) => {
         let pki = forge.pki;
 
         // set keys and certificate
@@ -64,18 +64,18 @@ function createUser(username,pass) {
             db.all(getUserRow, function(err, result){
                 if (err) {
                     closeDb(db);
-                    reject(err);
+                    return reject(err);
                 }
                 else if (result.length > 0) {
                     closeDb(db);
-                    reject("Username exists");
+                    return reject("Username exists");
                 }
                 else{
                     db.all(insertUser, function(err, result){
                         closeDb(db);
                         if (err)
-                            reject(err);
-                        resolve();
+                            return reject(err);
+                        return resolve();
                     });
                 }
             });
@@ -86,17 +86,17 @@ function createUser(username,pass) {
 }
 
 function checkIfUserAndPassOk(username,pass) {
-    var query = (db) => {
-        var getUserRow = "SELECT * FROM Clients WHERE username='" + username + "'";
+    let query = (db) => {
+        let getUserRow = "SELECT * FROM Clients WHERE username='" + username + "'";
 
         return new Promise((resolve,reject) => {
             db.all(getUserRow, function(err, result){
                 closeDb(db);
 
                 if (err)
-                    reject(err);
+                    return reject(err);
                 else if (result.length === 0)
-                    reject("User doesn't exists");
+                    return reject("User doesn't exists");
 
                 let salt =  result[0]['salt'];
                 const hmac = crypto.createHmac('sha256', salt);
@@ -105,9 +105,9 @@ function checkIfUserAndPassOk(username,pass) {
                 let hashedPass = hmac.digest('hex');
 
                 if (hashedPass === result[0]['pass'])
-                    resolve();
+                    return resolve();
                 else
-                    reject("Password incorrect");
+                    return reject("Password incorrect");
             });
         });
     };
@@ -116,8 +116,8 @@ function checkIfUserAndPassOk(username,pass) {
 }
 
 function getUsersList(){
-    var query = (db) => {
-        var getUsers = "SELECT username FROM Clients";
+    let query = (db) => {
+        let getUsers = "SELECT username FROM Clients";
 
         return new Promise((resolve,reject) => {
             db.all(getUsers, function(err, rows){

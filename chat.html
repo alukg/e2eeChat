@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="node_modules/bootstrap/dist/css/bootstrap.css">
+    <link rel="stylesheet" href="style.css">
+
+    <!---- Font ----->
+    <link href="https://fonts.googleapis.com/css?family=Orbitron" rel="stylesheet">
+
+    <title>Encrypted End-To-End Chat</title>
+</head>
+<body>
+
+
+
+<script src="node_modules/socket.io-client/dist/socket.io.js"></script>
+<script src="node_modules/jquery/dist/jquery.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+<script src="node_modules/bootstrap/dist/js/bootstrap.js"></script>
+<script>
+    function connect(username,pass,sts) {
+        let socket = io.connect('http://localhost:4200', {query: 'sts=' + sts + '&' + 'name=' + username + '&' + 'pass=' + pass});
+        // Add a connect listener
+        socket.on('connect', function () {
+            alert('Client has connected to the server!');
+        });
+        // Add a connect listener
+        socket.on('serverMessage', function (data) {
+            alert('Received a message from the server:\n' + data);
+        });
+        // Add a disconnect listener
+        socket.on('disconnect', function () {
+            alert('The client has disconnected!');
+        });
+    }
+
+    // Sends a message to the server via sockets
+    function sendMessageToServer(message) {
+        socket.emit('clientMessage', message);
+    }
+</script>
+
+</body>
+</html>

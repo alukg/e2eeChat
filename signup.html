@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="node_modules/bootstrap/dist/css/bootstrap.css">
+    <link rel="stylesheet" href="style.css">
+
+    <title>Encrypted End-To-End Chat</title>
+</head>
+<body>
+
+<div class="login-page">
+    <div class="form">
+        <form class="register-form" action="/signup" method="post">
+            <fieldset>
+                <input type="email" name="email" id="upEmail" class="form-control input-lg" placeholder="Email Address">
+                <input type="password" name="pass" id="upPassword" class="form-control input-lg" placeholder="Password">
+                <input type="password" name="confirmPass" id="confirmPassword" class="form-control input-lg" placeholder="Validate password">
+                <div class="registrationFormAlert" id="divCheckPasswordMatch"></div>
+                <button type="submit">create</button>
+            </fieldset>
+            <p class="message">Already registered? <a href="login">Sign In</a></p>
+        </form>
+    </div>
+</div>
+
+<script src="node_modules/socket.io-client/dist/socket.io.js"></script>
+<script src="node_modules/jquery/dist/jquery.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+<script src="node_modules/bootstrap/dist/js/bootstrap.js"></script>
+
+<!-- password match script -->
+
+<script>
+    $(document).ready(function () {
+        $("#upPassword, #confirmPassword").keyup(checkPasswordMatch);
+    });
+
+    function checkPasswordMatch() {
+        let password = $("#upPassword").val();
+        let confirmPassword = $("#confirmPassword").val();
+
+        if(password === "" && confirmPassword === "")
+        {
+            $("#divCheckPasswordMatch").html("");
+            return false;
+        }
+        else
+        {
+            if (password != confirmPassword) {
+                $("#divCheckPasswordMatch").html("Passwords do not match!");
+                return false;
+            }
+            else {
+                $("#divCheckPasswordMatch").html("Passwords match.");
+                return true;
+            }
+        }
+    }
+</script>
+
+</body>
+</html>

@@ -2,24 +2,52 @@
  * Created by guy on 22/03/18.
  */
 
-var dbFuncs = require('./dbFuncs.js');
-var express = require('express');
-var app = express();
-var server = require('http').createServer(app);
-var io = require('socket.io')(server);
+let dbFuncs = require('./dbFuncs.js');
+let express = require('express');
+let app = express();
+let server = require('http').createServer(app);
+let io = require('socket.io')(server);
+let bodyParser = require('body-parser');
 
-app.use(express.static(__dirname + '/node_modules'));
-app.get('/', function(req, res, next) {
-    res.sendFile(__dirname + '/index.html');
+app.use(express.static(__dirname + '/'));
+app.use(bodyParser.urlencoded({ extended: true }));
+
+app.get("/", function (req, res) {
+    res.sendFile(__dirname + '/login.html');
+});
+app.get("/login", function (req, res) {
+    res.sendFile(__dirname + '/login.html');
+});
+app.get("/signup", function (req, res) {
+    res.sendFile(__dirname + '/signup.html');
+});
+app.get("/chat", function (req, res) {
+    res.sendFile(__dirname + '/chat.html');
 });
 
-var FuncSts = {"signin":1, "signup":2}
-Object.freeze(FuncSts);
+app.post('/signup', function(req, res) {
+    dbFuncs.createUser(req.body.email,req.body.pass).then(
+        () => {
+            res.redirect('/chat');
+        }, (err) => {
+            console.log("signup error: " + err);
+            res.redirect('/signup');
+        });
+});
+app.post('/login', function(req, res) {
+    dbFuncs.checkIfUserAndPassOk(req.body.email,req.body.pass).then(
+        () => {
+            res.redirect('/chat');
+        }, (err) => {
+            console.log("signin error: " + err);
+            res.redirect('/signin');
+        });
+});
 
 io.on('connection', function(client) {
-    var username = client.handshake.query.name;
-    var pass = client.handshake.query.pass;
-    var sts = client.handshake.query.sts;
+    let username = client.handshake.query.name;
+    let pass = client.handshake.query.pass;
+    let sts = client.handshake.query.sts;
 
     if (sts == FuncSts.signin){
         dbFuncs.checkIfUserAndPassOk(username,pass).then(
@@ -53,5 +81,3 @@ io.on('connection', function(client) {
 });
 
 server.listen(4200);
-
-module.exports = app;
