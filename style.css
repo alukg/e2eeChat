@@ -1,4 +1,5 @@
 body {background-color:#eee;}
 .container-fluid {padding:50px;}
-.container{background-color:white;padding:50px;   }
-#title{font-family: 'Lobster', cursive;;}
+.container {background-color:white;padding:50px;   }
+#title {font-family: 'Lobster', cursive;;}
+#login-window {background-color:#222; height: 200vh;}
