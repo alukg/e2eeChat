@@ -24,6 +24,7 @@ body {
     max-height: 720px;
     border: 1px solid #9da0a3;
     background: #fbffff;
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
 }
 @media screen and (max-width: 360px) {
     #frame {
@@ -58,6 +59,7 @@ body {
     cursor: pointer;
     color: white;
     font-weight: bold;
+    position: relative;
 }
 
 #frame #sidepanel #search {
@@ -97,22 +99,17 @@ body {
     color: #000;
 }
 #frame #sidepanel #contacts {
-    height: calc(92vh - 84px);
     overflow-y: auto;
     overflow-x: hidden;
 }
 @media screen and (max-width: 735px) {
     #frame #sidepanel #contacts {
-        height: calc(100%);
         overflow-y: auto;
         overflow-x: hidden;
     }
     #frame #sidepanel #contacts::-webkit-scrollbar {
         display: none;
     }
-}
-#frame #sidepanel #contacts.expanded {
-    height: calc(100%);
 }
 #frame #sidepanel #contacts::-webkit-scrollbar {
     width: 8px;
@@ -152,6 +149,7 @@ body {
     width: 100%;
     margin: 0 auto;
     position: relative;
+    border-bottom: 1px solid #edf0f3;
 }
 @media screen and (max-width: 735px) {
     #frame #sidepanel #contacts ul li.contact .wrap {

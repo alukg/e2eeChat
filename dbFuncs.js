@@ -165,7 +165,7 @@ function closeDb(db) {
         if (err) {
             console.log(err.message);
         }
-        console.log('Close the database connection.');
+        //console.log('Close the database connection.');
     });
 }
 
@@ -174,7 +174,7 @@ function executeQuery(func){
         if (err) {
             console.log(err.message);
         }
-        console.log('Connected to the database.');
+        //console.log('Connected to the database.');
     });
 
     return func(db);

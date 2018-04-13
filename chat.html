@@ -19,78 +19,26 @@
 
 <div id="frame">
     <div id="sidepanel">
+        <form action="/logout">
+            <input id="logout" type="submit" value="Logout" />
+        </form>
         <div id="search">
             <label for=""><i class="fa fa-search" aria-hidden="true"></i></label>
             <input type="text" placeholder="Search contacts..." />
         </div>
         <div id="contacts">
             <ul>
-                <li class="contact">
-                    <div class="wrap">
-                        <div class="contact-status online"></div>
-                        <p class="name">Louis Litt</p>
-                    </div>
-                </li>
-                <li class="contact">
-                    <div class="wrap">
-                        <div class="contact-status waiting"></div>
-                        <p class="name">Harvey Specter</p>
-                    </div>
-                </li>
-                <li class="contact">
-                    <div class="wrap">
-                        <div class="contact-status"></div>
-                        <p class="name">Rachel Zane</p>
-                    </div>
-                </li>
+
             </ul>
         </div>
-        <form action="/logout">
-            <input id="logout" type="submit" value="Logout" />
-        </form>
     </div>
     <div class="content">
         <div class="contact-profile">
-            <p>Harvey Specter</p>
+            <p></p>
         </div>
         <div class="messages">
             <ul>
-                <li class="sent">
-                    <p>How the hell am I supposed to get a jury to believe you when I am not even sure that I do?!</p>
-                </li>
-                <li class="replies">
-                    <p>When you're backed against the wall, break the god damn thing down.</p>
-                </li>
-                <li class="replies">
-                    <p>Excuses don't win championships.</p>
-                </li>
-                <li class="sent">
-                    <p>Oh yeah, did Michael Jordan tell you that?</p>
-                </li>
-                <li class="replies">
-                    <p>No, I told him that.</p>
-                </li>
-                <li class="replies">
-                    <p>What are your choices when someone puts a gun to your head?</p>
-                </li>
-                <li class="sent">
-                    <p>What are you talking about? You do what they say or they shoot you.</p>
-                </li>
-                <li class="replies">
-                    <p>Wrong. You take the gun, or you pull out a bigger one. Or, you call their bluff. Or, you do any one of a hundred and forty six other things.</p>
-                </li>
-                <li class="sent">
-                    <p>What are you talking about? You do what they say or they shoot you.</p>
-                </li>
-                <li class="replies">
-                    <p>Wrong. You take the gun, or you pull out a bigger one. Or, you call their bluff. Or, you do any one of a hundred and forty six other things.</p>
-                </li>
-                <li class="sent">
-                    <p>What are you talking about? You do what they say or they shoot you.</p>
-                </li>
-                <li class="replies">
-                    <p>Wrong. You take the gun, or you pull out a bigger one. Or, you call their bluff. Or, you do any one of a hundred and forty six other things.</p>
-                </li>
+
             </ul>
         </div>
         <div class="message-input">
@@ -106,53 +54,118 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
 <script src="node_modules/bootstrap/dist/js/bootstrap.js"></script>
 <script>
-    let socket = io.connect('http://localhost:4200', {query: 'name=' + });
-    // Add a connect listener
-    socket.on('connect', function () {
-        alert('Client has connected to the server!');
-    });
-    // Add a connect listener
-    socket.on('serverMessage', function (data) {
-        alert('Received a message from the server:\n' + data);
-    });
-    // Add a disconnect listener
-    socket.on('disconnect', function () {
-        alert('The client has disconnected!');
+    let socket = null;
+    let currentChatUser = null;
+    let usersMessages = {};
+    let d = new Date();
+
+    $(document).ready(function() {
+        socket = io.connect('localhost:4200');
+        // Add a connect listener
+        socket.on('connect', function () {
+            $("#frame").css("border", "1px solid #2ecc71");
+        });
+        socket.on('usersList', function (data) {
+            updateUsersList(data);
+        });
+        // Add a disconnect listener
+        socket.on('disconnect', function () {
+            $("#frame").css("border", "1px solid #EF3B3A");
+        });
+        socket.on('message', function (message) {
+            alert(message["from"] + message["data"]);
+        });
     });
 
-    // Sends a message to the server via sockets
-    function sendMessageToServer(message) {
-        socket.emit('clientMessage', message);
+    function updateUsersList(users){
+        let allUsers = users.allUsers;
+        let connectedUsers = users.connectedUsers;
+        $('.contact').each(function (index, obj) {
+            // run over all the list
+            let username = $(obj).find('p').text();
+            // if user not on db
+            if (allUsers.indexOf(username) === -1)
+                $(obj).remove();
+            // if on db
+            else {
+                // stay on list
+                remove(allUsers, username);
+                // check if connected and update status
+                if (connectedUsers.indexOf(username) > -1)
+                    $(obj).find('.contact-status').addClass('online');
+                else
+                    $(obj).find('.contact-status').removeClass('online');
+            }
+        });
+        // add all new users
+        for (i = 0; i < allUsers.length; i++) {
+            usersMessages[allUsers[i]] = [];
+            if (connectedUsers.indexOf(allUsers[i]) > -1)
+                $('<li class="contact"> <div class="wrap"> <div class="contact-status online"></div> <p class="name">' + allUsers[i] + '</p> </div> </li>').appendTo($('#contacts ul'));
+            else
+                $('<li class="contact"> <div class="wrap"> <div class="contact-status"></div> <p class="name">' + allUsers[i] + '</p> </div> </li>').appendTo($('#contacts ul'));
+        }
+
+        $('.contact').click(function () {
+            // remove active from all users
+            $('.contact').each(function (index, obj) {
+                $(obj).removeClass("active");
+            });
+            // add active for the clicked user
+            $(this).addClass("active");
+            // set this user as the content user
+            currentChatUser = $(this).find('p').text();
+            $(".contact-profile").find('p').text(currentChatUser);
+            $(".messages ul").empty();
+            getAndPresentMessages();
+        });
     }
-</script>
 
-<script>
-
-</script>
-
-<script>
     $(".messages").animate({ scrollTop: $(document).height() }, "fast");
 
     function newMessage() {
-        message = $(".message-input input").val();
-        if($.trim(message) == '') {
+        let message = $(".message-input input").val();
+        $('.message-input input').val(null);
+        if($.trim(message) === '') {
             return false;
         }
-        $('<li class="sent"><p>' + message + '</p></li>').appendTo($('.messages ul'));
-        $('.message-input input').val(null);
-        $(".messages").animate({ scrollTop: $(document).height() }, "fast");
-    };
+        // add the message time
+        message = d.getHours() + ':' + d.getMinutes() + "<br>" + message;
+        if (currentChatUser != null){
+            // add message to content
+            $('<li class="sent"><p>' + message + '</p></li>').appendTo($('.messages ul'));
+            // add message to array
+            usersMessages[currentChatUser].push({type: "sent", value: message});
+            $(".messages").animate({ scrollTop: $(document).height() }, "fast");
 
-    $('.submit').click(function() {
-        newMessage();
-    });
+            // send message to user
+            socket.emit('message', {to: currentChatUser, data: message});
+        }
+    }
+
+    function getAndPresentMessages() {
+        let messagesArr = usersMessages[currentChatUser];
+        for (i = 0; i < messagesArr.length; i++){
+            let message = messagesArr[i];
+            $('<li class=' + message["type"] + '><p>' + message["value"] + '</p></li>').appendTo($('.messages ul'));
+        }
+    }
 
     $(window).on('keydown', function(e) {
-        if (e.which == 13) {
+        if (e.which === 13) {
             newMessage();
             return false;
         }
     });
+
+    function remove(array, element) {
+        const index = array.indexOf(element);
+
+        if (index !== -1) {
+            array.splice(index, 1);
+        }
+    }
+
 </script>
 
 </body>

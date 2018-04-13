@@ -2,34 +2,33 @@
  * Created by guy on 22/03/18.
  */
 
-let dbFuncs = require('./dbFuncs.js');
-let express = require('express');
-let app = express();
-let server = require('http').createServer(app);
-let io = require('socket.io')(server);
-let bodyParser = require('body-parser');
-let session = require('express-session');
-let cookieParser = require('cookie-parser');
+let dbFuncs = require('./dbFuncs.js'),
+    express = require('express'),
+    app = express(),
+    server = require('http').createServer(app),
+    sio = require('socket.io')(server),
+    bodyParser = require('body-parser'),
+    session = require('express-session');
 
 app.use(express.static(__dirname + '/'));
 app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(cookieParser());
-app.use(session({
-    // When there is nothing on the session, save it
+app.use(bodyParser.urlencoded({ extended: true }));
+
+let sessStore = new session.MemoryStore();
+let sessionMiddleware = session({
+    store: sessStore,
+    secret: 'secret',
+    resave: true,
     saveUninitialized: true,
-    // Don't update session if it changes
-    resave: false,
-    // Name of your cookie
-    name: 'login cookie',
-    // Secret of your cookie
-    secret: 'secret'
-}));
+    name: 'express.sid',
+    key: 'express.sid'
+});
+app.use(sessionMiddleware);
 
 app.get("/", function (req, res) {
-    if(req.session.user)
-        res.sendFile(__dirname + '/chat.html');
-    else
+    //if(req.session.user)
+    //    res.sendFile(__dirname + '/chat.html');
+    //else
         res.sendFile(__dirname + '/login.html');
 });
 app.get("/login", function (req, res) {
@@ -59,7 +58,6 @@ app.get("/chat", function (req, res) {
         res.redirect('/login');
     }
 });
-
 app.post('/register', function(req, res) {
     dbFuncs.createUser(req.body.email,req.body.pass).then(
         () => {
@@ -82,7 +80,6 @@ app.post('/login', function(req, res) {
             res.redirect('/login');
         });
 });
-
 app.get('/logout', function(req, res) {
     req.session.destroy(function(err) {
         if(err) {
@@ -94,14 +91,82 @@ app.get('/logout', function(req, res) {
     });
 });
 
-io.on('connection', function(client) {
-    console.log('Client connected...');
-    client.on('clientMessage', function (data) {
+// ---------------- Socket-io ----------------
 
+let users = [];
+
+sio.use(function(socket, next) {
+    sessionMiddleware(socket.request, socket.request.res, next);
+});
+
+sio.on("connection", function(socket) {
+    console.log('connect user: ' + socket.request.session.user);
+    let sessionUser = socket.request.session.user;
+
+    users.push({socketId: socket.id, username: socket.request.session.user});
+
+    sendUsersList(sessionUser);
+
+    setInterval(function(){
+        sendUsersList(sessionUser);
+    }, 2000);
+
+    socket.on('message', function (userdata) {
+        let socketId;
+        for( let i=0; i < users.length; i++ ){
+            let c = users[i];
+            if(c["username"] === userdata["to"]){
+                socketId = c["socketId"];
+                break;
+            }
+        }
+        sio.sockets.connected[socketId].emit('message',{from: sessionUser, data: userdata["data"]});
     });
-    client.on('disconnect', function(){
-        //client.broadcast.to(roomName).emit('user_leave', {user_name: "johnjoe123"});
+
+    function sendUsersList(sessionUser){
+        dbFuncs.getUsersList().then(
+            (usersList) => {
+                let connectedUsers = [];
+                for( let i=0; i < users.length; i++ )
+                    connectedUsers.push(users[i]["username"]);
+                remove(usersList, sessionUser);
+                socket.emit('usersList', { allUsers: usersList, connectedUsers: connectedUsers});
+            }, (err) => {
+            });
+    }
+
+    socket.on('disconnect', function (data) {
+        for( let i=0; i < users.length; i++ ){
+            let c = users[i];
+            if(c["socketId"] === socket.id){
+                users.splice(i,1);
+                break;
+            }
+        }
     });
 });
+
+// ---------------- API ----------------
+
+/*
+app.get("/api/getUsersList", function (req, res) {
+    dbFuncs.getUsersList().then(
+        (usersList) => {
+            res.json(usersList);
+        }, (err) => {
+            res.json(err);
+        });
+});
+*/
+
+// ---------------- Help functions ----------------
+
+function remove(array, element) {
+    const index = array.indexOf(element);
+
+    if (index !== -1) {
+        array.splice(index, 1);
+    }
+}
 
 server.listen(4200);
