@@ -15,7 +15,7 @@
 
 <div class="login-page">
     <div class="form">
-        <form class="register-form" action="/signup" method="post">
+        <form class="register-form" action="/register" method="post">
             <fieldset>
                 <input type="email" name="email" id="upEmail" class="form-control input-lg" placeholder="Email Address">
                 <input type="password" name="pass" id="upPassword" class="form-control input-lg" placeholder="Password">
@@ -51,7 +51,7 @@
         }
         else
         {
-            if (password != confirmPassword) {
+            if (password !== confirmPassword) {
                 $("#divCheckPasswordMatch").html("Passwords do not match!");
                 return false;
             }

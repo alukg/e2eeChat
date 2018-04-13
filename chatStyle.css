@@ -1,0 +1,292 @@
+html {
+    height: 100%;
+    font-family: 'Open Sans', sans-serif;
+}
+body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background: #f0f1f2;
+    font-size: 1em;
+    letter-spacing: 0.1px;
+    color: #32465a;
+    text-rendering: optimizeLegibility;
+    text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.004);
+    -webkit-font-smoothing: antialiased;
+}
+#frame {
+    width: 95%;
+    min-width: 360px;
+    max-width: 1000px;
+    height: 92vh;
+    min-height: 300px;
+    max-height: 720px;
+    border: 1px solid #9da0a3;
+    background: #fbffff;
+}
+@media screen and (max-width: 360px) {
+    #frame {
+        width: 100%;
+        height: 100vh;
+    }
+}
+#frame #sidepanel {
+    float: left;
+    min-width: 280px;
+    max-width: 340px;
+    width: 40%;
+    height: 100%;
+    background: #fbffff;
+    border-right: 1px solid #9da0a3;
+    color: #f5f5f5;
+    overflow: hidden;
+    position: relative;
+}
+@media screen and (max-width: 735px) {
+    #frame #sidepanel {
+        width: 58px;
+        min-width: 58px;
+    }
+}
+
+#frame #sidepanel #logout {
+    width: 100%;
+    padding: 12px;
+    background-color: #40abfe;
+    border: none;
+    cursor: pointer;
+    color: white;
+    font-weight: bold;
+}
+
+#frame #sidepanel #search {
+    font-weight: 300;
+}
+@media screen and (max-width: 735px) {
+    #frame #sidepanel #search {
+        display: none;
+    }
+}
+#frame #sidepanel #search label {
+    position: absolute;
+    color: #000;
+    margin: 10px 0 0 15px;
+}
+#frame #sidepanel #search input {
+    padding: 10px 0 10px 46px;
+    width: 100%;
+    border: none;
+    background: #eaedf0;
+    color: #f5f5f5;
+}
+#frame #sidepanel #search input:focus {
+    outline: none;
+    background: #40abfe;
+}
+#frame #sidepanel #search input::-webkit-input-placeholder {
+    color: #000;
+}
+#frame #sidepanel #search input::-moz-placeholder {
+    color: #000;
+}
+#frame #sidepanel #search input:-ms-input-placeholder {
+    color: #000;
+}
+#frame #sidepanel #search input:-moz-placeholder {
+    color: #000;
+}
+#frame #sidepanel #contacts {
+    height: calc(92vh - 84px);
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+@media screen and (max-width: 735px) {
+    #frame #sidepanel #contacts {
+        height: calc(100%);
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+    #frame #sidepanel #contacts::-webkit-scrollbar {
+        display: none;
+    }
+}
+#frame #sidepanel #contacts.expanded {
+    height: calc(100%);
+}
+#frame #sidepanel #contacts::-webkit-scrollbar {
+    width: 8px;
+    background: transparent;
+}
+#frame #sidepanel #contacts::-webkit-scrollbar-thumb {
+    background-color: #40abfe;
+}
+#frame #sidepanel #contacts ul li.contact {
+    position: relative;
+    font-size: 0.9em;
+    cursor: pointer;
+}
+#frame #sidepanel #contacts ul li.contact.active {
+    background: #40abfe;
+}
+#frame #sidepanel #contacts ul li.contact.active .wrap .name {
+    color: white;
+}
+#frame #sidepanel #contacts ul li.contact .wrap .name {
+    padding: 20px 0 20px 10px;
+    color: black;
+}
+@media screen and (max-width: 735px) {
+    #frame #sidepanel #contacts ul li.contact .wrap .name {
+        padding: 6px 0 46px 8px;
+        color: black;
+    }
+}
+#frame #sidepanel #contacts ul li.contact:hover {
+    background: #40abfe;
+}
+#frame #sidepanel #contacts ul li.contact:hover .wrap .name {
+    color: white;
+}
+#frame #sidepanel #contacts ul li.contact .wrap {
+    width: 100%;
+    margin: 0 auto;
+    position: relative;
+}
+@media screen and (max-width: 735px) {
+    #frame #sidepanel #contacts ul li.contact .wrap {
+        width: 100%;
+    }
+}
+#frame #sidepanel #contacts ul li.contact .wrap .contact-status {
+    position: relative;
+    float: right;
+    height: 54px;
+    width: 15px;
+    background: transparent;
+}
+#frame #sidepanel #contacts ul li.contact .wrap .contact-status.online {
+    background: #2ecc71;
+    border-left: 1px solid white;
+}
+#frame #sidepanel #contacts ul li.contact .wrap .contact-status.waiting {
+    background: #f1c40f;
+    border-left: 1px solid white;
+}
+#frame .content {
+    float: right;
+    width: 60%;
+    height: 100%;
+    overflow: hidden;
+    position: relative;
+}
+@media screen and (max-width: 735px) {
+    #frame .content {
+        width: calc(100% - 58px);
+        min-width: 300px !important;
+    }
+}
+@media screen and (min-width: 900px) {
+    #frame .content {
+        width: calc(100% - 340px);
+    }
+}
+#frame .content .contact-profile {
+    width: 100%;
+    height: 50px;
+    line-height: 50px;
+    background: #eaedf0;
+}
+#frame .content .contact-profile p {
+    float: left;
+    color: black;
+    padding-left: 30px;
+}
+#frame .content .messages {
+    height: auto;
+    min-height: calc(100% - 80px);
+    max-height: calc(100% - 80px);
+    overflow-y: scroll;
+    overflow-x: hidden;
+}
+@media screen and (max-width: 735px) {
+    #frame .content .messages {
+        max-height: calc(100% - 105px);
+    }
+}
+#frame .content .messages::-webkit-scrollbar {
+    width: 8px;
+    background: transparent;
+}
+#frame .content .messages::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.3);
+}
+#frame .content .messages ul li {
+    display: inline-block;
+    clear: both;
+    float: left;
+    margin: 15px 15px 5px 15px;
+    width: calc(100% - 25px);
+    font-size: 0.9em;
+}
+#frame .content .messages ul li:nth-last-child(1) {
+    margin-bottom: 20px;
+}
+#frame .content .messages ul li.sent img {
+    margin: 6px 8px 0 0;
+}
+#frame .content .messages ul li.sent p {
+    background: #40abfe;
+    color: #f5f5f5;
+}
+#frame .content .messages ul li.replies img {
+    float: right;
+    margin: 6px 0 0 8px;
+}
+#frame .content .messages ul li.replies p {
+    background: #f5f5f5;
+    float: right;
+}
+#frame .content .messages ul li img {
+    width: 22px;
+    border-radius: 50%;
+    float: left;
+}
+#frame .content .messages ul li p {
+    display: inline-block;
+    padding: 10px 15px;
+    border-radius: 10px;
+    max-width: 205px;
+    line-height: 130%;
+}
+@media screen and (min-width: 735px) {
+    #frame .content .messages ul li p {
+        max-width: 300px;
+    }
+}
+#frame .content .message-input {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    z-index: 99;
+}
+#frame .content .message-input .wrap {
+    position: relative;
+}
+#frame .content .message-input .wrap input {
+    float: left;
+    border: none;
+    width: 100%;
+    padding: 11px 32px 10px 8px;
+    font-size: 0.8em;
+    border-top: 1px solid #9da0a3;
+    color: black;
+}
+@media screen and (max-width: 735px) {
+    #frame .content .message-input .wrap input {
+        padding: 15px 32px 16px 8px;
+    }
+}
+#frame .content .message-input .wrap input:focus {
+    outline: none;
+}

@@ -7,7 +7,7 @@ const crypto = require('crypto');
 const forge = require('node-forge');
 const fs = require('fs')
 
-module.exports = {createUser,checkIfUserAndPassOk,getUsersList};
+module.exports = {createUser,checkIfUserAndPassOk,getUsersList,checkIfUserExists};
 
 function createUser(username,pass) {
     let query = (db) => {
@@ -108,6 +108,27 @@ function checkIfUserAndPassOk(username,pass) {
                     return resolve();
                 else
                     return reject("Password incorrect");
+            });
+        });
+    };
+
+    return executeQuery(query);
+}
+
+function checkIfUserExists(username) {
+    let query = (db) => {
+        let getUserRow = "SELECT * FROM Clients WHERE username='" + username + "'";
+
+        return new Promise((resolve,reject) => {
+            db.all(getUserRow, function(err, result){
+                closeDb(db);
+
+                if (err)
+                    return reject(err);
+                else if (result.length === 0)
+                    return reject("User doesn't exists");
+                else
+                    return resolve();
             });
         });
     };
