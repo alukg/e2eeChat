@@ -105,14 +105,17 @@ sio.on("connection", function(socket) {
 
     users.push({socketId: socket.id, username: socket.request.session.user});
 
+    socket.broadcast.emit('connectUser', sessionUser);
+
     sendUsersList(sessionUser);
+    sendWaitingMessages(sessionUser);
 
     setInterval(function(){
         sendUsersList(sessionUser);
     }, 2000);
 
     socket.on('message', function (userdata) {
-        let socketId;
+        let socketId = null;
         for( let i=0; i < users.length; i++ ){
             let c = users[i];
             if(c["username"] === userdata["to"]){
@@ -120,7 +123,12 @@ sio.on("connection", function(socket) {
                 break;
             }
         }
-        sio.sockets.connected[socketId].emit('message',{from: sessionUser, data: userdata["data"]});
+        if (socketId === null){
+            dbFuncs.pushMessageToServer(sessionUser,userdata["to"],userdata["data"]).then(() => {}, (err) => {});
+        }
+        else{
+            sio.sockets.connected[socketId].emit('message',{from: sessionUser, data: userdata["data"]});
+        }
     });
 
     function sendUsersList(sessionUser){
@@ -135,11 +143,20 @@ sio.on("connection", function(socket) {
             });
     }
 
+    function sendWaitingMessages(sessionUser){
+        dbFuncs.getWaitingMessages(sessionUser).then(
+            (messages) => {
+                socket.emit('waitingMessages', messages);
+            }, (err) => {
+            });
+    }
+
     socket.on('disconnect', function (data) {
         for( let i=0; i < users.length; i++ ){
             let c = users[i];
             if(c["socketId"] === socket.id){
                 users.splice(i,1);
+                socket.broadcast.emit('disconnectUser', sessionUser);
                 break;
             }
         }

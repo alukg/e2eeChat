@@ -7,7 +7,7 @@ const crypto = require('crypto');
 const forge = require('node-forge');
 const fs = require('fs')
 
-module.exports = {createUser,checkIfUserAndPassOk,getUsersList,checkIfUserExists};
+module.exports = {createUser,checkIfUserAndPassOk,getUsersList,checkIfUserExists,pushMessageToServer,getWaitingMessages};
 
 function createUser(username,pass) {
     let query = (db) => {
@@ -152,6 +152,58 @@ function getUsersList(){
                         namesArray.push(rows[key].username);
                     });
                     resolve(namesArray);
+                }
+            });
+        });
+    };
+
+    return executeQuery(query);
+}
+
+function pushMessageToServer(from,to,message){
+    let query = (db) => {
+        let push = `INSERT INTO Messages ("to","from",message) VALUES ('${to}','${from}','${message}')`;
+
+        return new Promise((resolve,reject) => {
+            db.all(push, function(err, data){
+                closeDb(db);
+
+                if (err)
+                    reject(err);
+                else{
+                    resolve();
+                }
+            });
+        });
+    };
+
+    return executeQuery(query);
+}
+
+function getWaitingMessages(toUser){
+    let query = (db) => {
+        let getMessages = `SELECT "from",message FROM Messages WHERE "to"='${toUser}'`;
+        let deleteMessages = `DELETE FROM Messages WHERE "to"='${toUser}'`;
+
+        return new Promise((resolve,reject) => {
+            db.all(getMessages, function(err, rows){
+                if (err) {
+                    closeDb(db);
+                    reject(err);
+                }
+                else{
+                    let messages = [];
+                    Object.keys(rows).forEach(key => {
+                        messages.push({from: rows[key].from, message: rows[key].message});
+                    });
+
+                    db.all(deleteMessages, function(err, rows) {
+                        closeDb(db);
+                        if (err)
+                            reject(err);
+                        else
+                            resolve(messages);
+                    });
                 }
             });
         });

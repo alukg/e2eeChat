@@ -68,12 +68,27 @@
         socket.on('usersList', function (data) {
             updateUsersList(data);
         });
+        socket.on('waitingMessages', function (messages) {
+            updateUsersMessagesArr(messages);
+        });
         // Add a disconnect listener
         socket.on('disconnect', function () {
             $("#frame").css("border", "1px solid #EF3B3A");
         });
+        socket.on('disconnectUser', function (user) {
+            $('.contact').each(function (index, obj) {
+                if($(obj).find('p').text() === user)
+                    $(obj).find('.contact-status').removeClass('online');
+            });
+        });
+        socket.on('connectUser', function (user) {
+            $('.contact').each(function (index, obj) {
+                if($(obj).find('p').text() === user)
+                    $(obj).find('.contact-status').addClass('online');
+            });
+        });
         socket.on('message', function (message) {
-            alert(message["from"] + message["data"]);
+            addMessage(message);
         });
     });
 
@@ -98,7 +113,7 @@
             }
         });
         // add all new users
-        for (i = 0; i < allUsers.length; i++) {
+        for (let i = 0; i < allUsers.length; i++) {
             usersMessages[allUsers[i]] = [];
             if (connectedUsers.indexOf(allUsers[i]) > -1)
                 $('<li class="contact"> <div class="wrap"> <div class="contact-status online"></div> <p class="name">' + allUsers[i] + '</p> </div> </li>').appendTo($('#contacts ul'));
@@ -113,6 +128,7 @@
             });
             // add active for the clicked user
             $(this).addClass("active");
+            $(this).find('.contact-status').removeClass("waiting");
             // set this user as the content user
             currentChatUser = $(this).find('p').text();
             $(".contact-profile").find('p').text(currentChatUser);
@@ -130,8 +146,8 @@
             return false;
         }
         // add the message time
-        message = d.getHours() + ':' + d.getMinutes() + "<br>" + message;
-        if (currentChatUser != null){
+        message = ("0" + d.getHours()).slice(-2) + ':' + ("0" + d.getMinutes()).slice(-2) + "<br>" + message;
+        if (currentChatUser !== null){
             // add message to content
             $('<li class="sent"><p>' + message + '</p></li>').appendTo($('.messages ul'));
             // add message to array
@@ -143,11 +159,45 @@
         }
     }
 
+    function updateUsersMessagesArr(messages) {
+        for (let i = 0; i < messages.length; i++){
+            let message = messages[i];
+            let from = message["from"];
+            // add message to array
+            if (from in usersMessages) {
+                usersMessages[from].push({type: "replies", value: message["message"]});
+                $('.contact').each(function (index, obj) {
+                    if($(obj).find('p').text() === from)
+                        $(obj).find('.contact-status').addClass('waiting');
+                });
+            }
+        }
+    }
+
     function getAndPresentMessages() {
         let messagesArr = usersMessages[currentChatUser];
-        for (i = 0; i < messagesArr.length; i++){
+        for (let i = 0; i < messagesArr.length; i++){
             let message = messagesArr[i];
             $('<li class=' + message["type"] + '><p>' + message["value"] + '</p></li>').appendTo($('.messages ul'));
+        }
+        $(".messages").animate({ scrollTop: $(document).height() }, "fast");
+    }
+
+    function addMessage(message) {
+        let from = message["from"];
+        let ms = message["data"];
+
+        usersMessages[from].push({type: "replies", value: ms});
+
+        if (from === currentChatUser){
+            $('<li class=replies><p>' + ms + '</p></li>').appendTo($('.messages ul'));
+            $(".messages").animate({ scrollTop: $(document).height() }, "fast");
+        }
+        else{
+            $('.contact').each(function (index, obj) {
+                if($(obj).find('p').text() === from)
+                    $(obj).find('.contact-status').addClass('waiting');
+            });
         }
     }
 
