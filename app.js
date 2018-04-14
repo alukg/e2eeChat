@@ -26,9 +26,9 @@ let sessionMiddleware = session({
 app.use(sessionMiddleware);
 
 app.get("/", function (req, res) {
-    //if(req.session.user)
-    //    res.sendFile(__dirname + '/chat.html');
-    //else
+    if(req.session.user)
+        res.sendFile(__dirname + '/chat.html');
+    else
         res.sendFile(__dirname + '/login.html');
 });
 app.get("/login", function (req, res) {
@@ -59,7 +59,7 @@ app.get("/chat", function (req, res) {
     }
 });
 app.post('/register', function(req, res) {
-    dbFuncs.createUser(req.body.email,req.body.pass).then(
+    dbFuncs.createUser(req.body.email,req.body.pass,req.body.certPem).then(
         () => {
             // sets a cookie with the user's info
             req.session.user = req.body.email;

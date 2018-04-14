@@ -15,7 +15,7 @@
 
 <div class="login-page">
     <div class="form">
-        <form class="register-form" action="/register" method="post">
+        <form id="register" class="register-form" action="/register" method="post">
             <fieldset>
                 <input type="email" name="email" id="upEmail" class="form-control input-lg" placeholder="Email Address">
                 <input type="password" name="pass" id="upPassword" class="form-control input-lg" placeholder="Password">
@@ -32,6 +32,55 @@
 <script src="node_modules/jquery/dist/jquery.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
 <script src="node_modules/bootstrap/dist/js/bootstrap.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/node-forge@0.7.0/dist/forge.min.js"></script>
+
+<!-- crypto script -->
+
+<script>
+    /*
+    $('#create').click(function() {
+        let pki = forge.pki;
+
+        // set keys and certificate
+        let keys = pki.rsa.generateKeyPair(2048);
+        let userCert = pki.createCertificate();
+        userCert.publicKey = keys.publicKey;
+        userCert.serialNumber = '01';
+        userCert.validity.notBefore = new Date();
+        userCert.validity.notAfter = new Date();
+        userCert.validity.notAfter.setFullYear(userCert.validity.notBefore.getFullYear() + 1);
+
+        let username = $('#register').find("input[name='email']").val();
+
+        let attrs = [{
+            name: 'commonName',
+            value: username
+        }, {
+            name: 'countryName',
+            value: ''
+        }, {
+            shortName: 'ST',
+            value: ''
+        }, {
+            name: 'localityName',
+            value: ''
+        }, {
+            name: 'organizationName',
+            value: ''
+        }, {
+            shortName: 'OU',
+            value: ''
+        }];
+
+        userCert.setSubject(attrs);
+        let certPem = pki.certificateToPem(userCert);
+
+        $("#certPem").val(certPem);
+
+        return true;
+    });
+    */
+</script>
 
 <!-- password match script -->
 
