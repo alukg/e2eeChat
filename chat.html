@@ -99,8 +99,13 @@
             // run over all the list
             let username = $(obj).find('p').text();
             // if user not on db
-            if (allUsers.indexOf(username) === -1)
+            if (allUsers.indexOf(username) === -1) {
                 $(obj).remove();
+                if (username === $(".contact-profile").find('p').text()){
+                    $(".contact-profile").find('p').text("");
+                    $(".messages ul").empty();
+                }
+            }
             // if on db
             else {
                 // stay on list

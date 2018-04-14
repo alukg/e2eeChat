@@ -5,14 +5,22 @@
 let dbFuncs = require('./dbFuncs.js'),
     express = require('express'),
     app = express(),
-    server = require('http').createServer(app),
-    sio = require('socket.io')(server),
+    https = require('https'),
     bodyParser = require('body-parser'),
-    session = require('express-session');
+    session = require('express-session'),
+    fs = require('fs');
 
 app.use(express.static(__dirname + '/'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+
+const opts = { key: fs.readFileSync(__dirname + "/CA/server_key.pem", 'utf8')
+    , cert: fs.readFileSync(__dirname + "/CA/server_cert.pem", 'utf8')
+    , requestCert: true
+    , rejectUnauthorized: false
+    , ca: [ fs.readFileSync(__dirname + "/CA/server_cert.pem", 'utf8') ] };
+
+let server = https.createServer(opts,app).listen(4200);
 
 let sessStore = new session.MemoryStore();
 let sessionMiddleware = session({
@@ -25,17 +33,32 @@ let sessionMiddleware = session({
 });
 app.use(sessionMiddleware);
 
+app.get('/authenticate', (req, res) => {
+    cert = req.connection.getPeerCertificate();
+    if (req.client.authorized) {
+        res.send(`Hello ${cert.subject.CN}, your certificate was issued by ${cert.issuer.CN}!`);
+    } else if (cert.subject) {
+        res.status(403).send(`Sorry ${cert.subject.CN}, certificates from ${cert.issuer.CN} are not welcome here.`);
+    } else {
+        res.status(401).send(`Sorry, but you need to provide a client certificate to continue.`);
+    }
+});
+
 app.get("/", function (req, res) {
     if(req.session.user)
-        res.sendFile(__dirname + '/chat.html');
+        res.redirect('/chat');
     else
-        res.sendFile(__dirname + '/login.html');
+        res.redirect('/login');
 });
 app.get("/login", function (req, res) {
     res.sendFile(__dirname + '/login.html');
 });
 app.get("/register", function (req, res) {
-    res.sendFile(__dirname + '/register.html');
+    if (req.client.authorized) {
+        res.sendFile(__dirname + '/register.html');
+    } else {
+        res.status(401).sendFile(__dirname + '/cert_err.html');
+    }
 });
 app.get("/chat", function (req, res) {
     if(req.session.user) {
@@ -59,7 +82,8 @@ app.get("/chat", function (req, res) {
     }
 });
 app.post('/register', function(req, res) {
-    dbFuncs.createUser(req.body.email,req.body.pass,req.body.certPem).then(
+    let cert = req.connection.getPeerCertificate();
+    dbFuncs.createUser(req.body.email,req.body.pass,cert).then(
         () => {
             // sets a cookie with the user's info
             req.session.user = req.body.email;
@@ -92,6 +116,8 @@ app.get('/logout', function(req, res) {
 });
 
 // ---------------- Socket-io ----------------
+
+const sio = require('socket.io')(server);
 
 let users = [];
 
@@ -185,5 +211,3 @@ function remove(array, element) {
         array.splice(index, 1);
     }
 }
-
-server.listen(4200);
