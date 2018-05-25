@@ -83,26 +83,43 @@ app.get("/chat", function (req, res) {
 });
 app.post('/register', function(req, res) {
     let cert = req.connection.getPeerCertificate();
-    dbFuncs.createUser(req.body.email,req.body.pass,cert).then(
-        () => {
-            // sets a cookie with the user's info
-            req.session.user = req.body.email;
-            res.redirect('/chat');
-        }, (err) => {
-            console.log("register error: " + err);
-            res.redirect('/register');
-        });
+    let certUsername = cert.subject["CN"];
+    if (certUsername !== req.body.email){
+        console.log("register error: wrong certificate");
+        res.redirect('/register');
+    }
+    else
+    {
+        dbFuncs.createUser(req.body.email,req.body.pass,cert).then(
+            () => {
+                // sets a cookie with the user's info
+                req.session.user = req.body.email;
+                res.redirect('/chat');
+            }, (err) => {
+                console.log("register error: " + err);
+                res.redirect('/register');
+            });
+    }
 });
 app.post('/login', function(req, res) {
-    dbFuncs.checkIfUserAndPassOk(req.body.email,req.body.pass).then(
-        () => {
-            // sets a cookie with the user's info
-            req.session.user = req.body.email;
-            res.redirect('/chat');
-        }, (err) => {
-            console.log("signin error: " + err);
-            res.redirect('/login');
-        });
+    let cert = req.connection.getPeerCertificate();
+    let certUsername = cert.subject["CN"];
+    if (certUsername !== req.body.email){
+        console.log("signin error: wrong certificate");
+        res.redirect('/login');
+    }
+    else
+    {
+        dbFuncs.checkIfUserAndPassOk(req.body.email,req.body.pass).then(
+            () => {
+                // sets a cookie with the user's info
+                req.session.user = req.body.email;
+                res.redirect('/chat');
+            }, (err) => {
+                console.log("signin error: " + err);
+                res.redirect('/login');
+            });
+    }
 });
 app.get('/logout', function(req, res) {
     req.session.destroy(function(err) {
@@ -150,7 +167,7 @@ sio.on("connection", function(socket) {
             }
         }
         if (socketId === null){
-            dbFuncs.pushMessageToServer(sessionUser,userdata["to"],userdata["data"]).then(() => {}, (err) => {});
+            dbFuncs.pushMessageToServer(sessionUser,userdata["to"],userdata["data"]).then(() => {}, (err) => {console.log(err)});
         }
         else{
             sio.sockets.connected[socketId].emit('message',{from: sessionUser, data: userdata["data"]});
@@ -163,7 +180,7 @@ sio.on("connection", function(socket) {
                 let connectedUsers = [];
                 for( let i=0; i < users.length; i++ )
                     connectedUsers.push(users[i]["username"]);
-                remove(usersList, sessionUser);
+                removeUserFromList(usersList, sessionUser);
                 socket.emit('usersList', { allUsers: usersList, connectedUsers: connectedUsers});
             }, (err) => {
             });
@@ -191,23 +208,33 @@ sio.on("connection", function(socket) {
 
 // ---------------- API ----------------
 
-/*
-app.get("/api/getUsersList", function (req, res) {
-    dbFuncs.getUsersList().then(
-        (usersList) => {
-            res.json(usersList);
-        }, (err) => {
-            res.json(err);
-        });
+app.get("/api/getCACert", function (req, res) {
+    res.send(fs.readFileSync(__dirname + "/CA/server_cert.pem", 'utf8'));
 });
-*/
+
+app.get("/api/getUserKey", function (req, res) {
+    res.send(fs.readFileSync(__dirname + "/certificates/alice/alice_key.pem", 'utf8'));
+});
+
+app.get("/api/getUserCert", function (req, res) {
+    res.send(fs.readFileSync(__dirname + "/certificates/alice/alice_cert.pem", 'utf8'));
+});
 
 // ---------------- Help functions ----------------
 
-function remove(array, element) {
-    const index = array.indexOf(element);
-
-    if (index !== -1) {
-        array.splice(index, 1);
+function removeUserFromList(array, element) {
+    let i;
+    let found = 0;
+    for(i=0; i < array.length; i++){
+        if(array[i]["username"] === element){
+            found = 1;
+            break;
+        }
     }
+
+    if(i === array.length)
+        i--;
+
+    if(found === 1)
+        array.splice(i,1);
 }

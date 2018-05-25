@@ -15,6 +15,16 @@ body {
     text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.004);
     -webkit-font-smoothing: antialiased;
 }
+
+#mask {
+    width: 100%;
+    height: 100%;
+    background: #f0f1f2;
+    text-align: center;
+    font-size: large;
+    display: none;
+}
+
 #frame {
     width: 95%;
     min-width: 360px;
@@ -25,13 +35,14 @@ body {
     border: 1px solid #9da0a3;
     background: #fbffff;
     box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+    display: none;
 }
-@media screen and (max-width: 360px) {
-    #frame {
-        width: 100%;
-        height: 100vh;
-    }
-}
+/*@media screen and (max-width: 360px) {*/
+    /*#frame {*/
+        /*width: 100%;*/
+        /*height: 100vh;*/
+    /*}*/
+/*}*/
 #frame #sidepanel {
     float: left;
     min-width: 280px;
@@ -44,12 +55,12 @@ body {
     overflow: hidden;
     position: relative;
 }
-@media screen and (max-width: 735px) {
-    #frame #sidepanel {
-        width: 58px;
-        min-width: 58px;
-    }
-}
+/*@media screen and (max-width: 735px) {*/
+    /*#frame #sidepanel {*/
+        /*width: 58px;*/
+        /*min-width: 58px;*/
+    /*}*/
+/*}*/
 
 #frame #sidepanel #logout {
     width: 100%;
@@ -65,26 +76,23 @@ body {
 #frame #sidepanel #search {
     font-weight: 300;
 }
-@media screen and (max-width: 735px) {
-    #frame #sidepanel #search {
-        display: none;
-    }
-}
+/*@media screen and (max-width: 735px) {*/
+    /*#frame #sidepanel #search {*/
+        /*display: none;*/
+    /*}*/
+/*}*/
 #frame #sidepanel #search label {
     position: absolute;
     color: #000;
     margin: 10px 0 0 15px;
 }
+
 #frame #sidepanel #search input {
     padding: 10px 0 10px 46px;
     width: 100%;
     border: none;
     background: #eaedf0;
-    color: #f5f5f5;
-}
-#frame #sidepanel #search input:focus {
-    outline: none;
-    background: #40abfe;
+    color: #000;
 }
 #frame #sidepanel #search input::-webkit-input-placeholder {
     color: #000;
@@ -102,15 +110,15 @@ body {
     overflow-y: auto;
     overflow-x: hidden;
 }
-@media screen and (max-width: 735px) {
-    #frame #sidepanel #contacts {
-        overflow-y: auto;
-        overflow-x: hidden;
-    }
-    #frame #sidepanel #contacts::-webkit-scrollbar {
-        display: none;
-    }
-}
+/*@media screen and (max-width: 735px) {*/
+    /*#frame #sidepanel #contacts {*/
+        /*overflow-y: auto;*/
+        /*overflow-x: hidden;*/
+    /*}*/
+    /*#frame #sidepanel #contacts::-webkit-scrollbar {*/
+        /*display: none;*/
+    /*}*/
+/*}*/
 #frame #sidepanel #contacts::-webkit-scrollbar {
     width: 8px;
     background: transparent;
@@ -133,12 +141,12 @@ body {
     padding: 20px 0 20px 10px;
     color: black;
 }
-@media screen and (max-width: 735px) {
-    #frame #sidepanel #contacts ul li.contact .wrap .name {
-        padding: 6px 0 46px 8px;
-        color: black;
-    }
-}
+/*@media screen and (max-width: 735px) {*/
+    /*#frame #sidepanel #contacts ul li.contact .wrap .name {*/
+        /*padding: 6px 0 46px 8px;*/
+        /*color: black;*/
+    /*}*/
+/*}*/
 #frame #sidepanel #contacts ul li.contact:hover {
     background: #40abfe;
 }
@@ -151,11 +159,11 @@ body {
     position: relative;
     border-bottom: 1px solid #edf0f3;
 }
-@media screen and (max-width: 735px) {
-    #frame #sidepanel #contacts ul li.contact .wrap {
-        width: 100%;
-    }
-}
+/*@media screen and (max-width: 735px) {*/
+    /*#frame #sidepanel #contacts ul li.contact .wrap {*/
+        /*width: 100%;*/
+    /*}*/
+/*}*/
 #frame #sidepanel #contacts ul li.contact .wrap .contact-status {
     position: relative;
     float: right;
@@ -178,12 +186,12 @@ body {
     overflow: hidden;
     position: relative;
 }
-@media screen and (max-width: 735px) {
-    #frame .content {
-        width: calc(100% - 58px);
-        min-width: 300px !important;
-    }
-}
+/*@media screen and (max-width: 735px) {*/
+    /*#frame .content {*/
+        /*width: calc(100% - 58px);*/
+        /*min-width: 300px !important;*/
+    /*}*/
+/*}*/
 @media screen and (min-width: 900px) {
     #frame .content {
         width: calc(100% - 340px);
@@ -207,11 +215,11 @@ body {
     overflow-y: scroll;
     overflow-x: hidden;
 }
-@media screen and (max-width: 735px) {
-    #frame .content .messages {
-        max-height: calc(100% - 105px);
-    }
-}
+/*@media screen and (max-width: 735px) {*/
+    /*#frame .content .messages {*/
+        /*max-height: calc(100% - 105px);*/
+    /*}*/
+/*}*/
 #frame .content .messages::-webkit-scrollbar {
     width: 8px;
     background: transparent;
@@ -256,6 +264,7 @@ body {
     border-radius: 10px;
     max-width: 205px;
     line-height: 130%;
+    word-break: break-all;
 }
 @media screen and (min-width: 735px) {
     #frame .content .messages ul li p {
@@ -280,11 +289,11 @@ body {
     border-top: 1px solid #9da0a3;
     color: black;
 }
-@media screen and (max-width: 735px) {
-    #frame .content .message-input .wrap input {
-        padding: 15px 32px 16px 8px;
-    }
-}
+/*@media screen and (max-width: 735px) {*/
+    /*#frame .content .message-input .wrap input {*/
+        /*padding: 15px 32px 16px 8px;*/
+    /*}*/
+/*}*/
 #frame .content .message-input .wrap input:focus {
     outline: none;
 }

@@ -17,14 +17,18 @@
 </head>
 <body>
 
+<div id="mask">
+    Increase the window size
+</div>
+
 <div id="frame">
     <div id="sidepanel">
-        <form action="/logout">
+        <form id="logout-form" action="/logout">
             <input id="logout" type="submit" value="Logout" />
         </form>
         <div id="search">
-            <label for=""><i class="fa fa-search" aria-hidden="true"></i></label>
-            <input type="text" placeholder="Search contacts..." />
+            <label><i class="fa fa-search" aria-hidden="true"></i></label>
+            <input id="search-bar" type="text" placeholder="Search contacts..." />
         </div>
         <div id="contacts">
             <ul>
@@ -53,11 +57,15 @@
 <script src="node_modules/jquery/dist/jquery.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
 <script src="node_modules/bootstrap/dist/js/bootstrap.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/node-forge@0.7.0/dist/forge.min.js"></script>
 <script>
     let socket = null;
     let currentChatUser = null;
     let usersMessages = {};
     let d = new Date();
+    let usersCerts = [];
+    let CApem = null;
+    let privateKeyPem = null;
 
     $(document).ready(function() {
         socket = io.connect('localhost:4200');
@@ -93,13 +101,18 @@
     });
 
     function updateUsersList(users){
-        let allUsers = users.allUsers;
+        usersCerts = {};
+        let allUsersNames = [];
+        for (let i = 0; i < users.allUsers.length; i++) {
+            allUsersNames.push(users.allUsers[i]["username"]);
+            usersCerts[users.allUsers[i]["username"]] = users.allUsers[i]["cert"];
+        }
         let connectedUsers = users.connectedUsers;
         $('.contact').each(function (index, obj) {
             // run over all the list
             let username = $(obj).find('p').text();
             // if user not on db
-            if (allUsers.indexOf(username) === -1) {
+            if (allUsersNames.indexOf(username) === -1) {
                 $(obj).remove();
                 if (username === $(".contact-profile").find('p').text()){
                     $(".contact-profile").find('p').text("");
@@ -109,7 +122,7 @@
             // if on db
             else {
                 // stay on list
-                remove(allUsers, username);
+                remove(allUsersNames, username);
                 // check if connected and update status
                 if (connectedUsers.indexOf(username) > -1)
                     $(obj).find('.contact-status').addClass('online');
@@ -118,12 +131,12 @@
             }
         });
         // add all new users
-        for (let i = 0; i < allUsers.length; i++) {
-            usersMessages[allUsers[i]] = [];
-            if (connectedUsers.indexOf(allUsers[i]) > -1)
-                $('<li class="contact"> <div class="wrap"> <div class="contact-status online"></div> <p class="name">' + allUsers[i] + '</p> </div> </li>').appendTo($('#contacts ul'));
+        for (let i = 0; i < allUsersNames.length; i++) {
+            usersMessages[allUsersNames[i]] = [];
+            if (connectedUsers.indexOf(allUsersNames[i]) > -1)
+                $('<li class="contact"> <div class="wrap"> <div class="contact-status online"></div> <p class="name">' + allUsersNames[i] + '</p> </div> </li>').appendTo($('#contacts ul'));
             else
-                $('<li class="contact"> <div class="wrap"> <div class="contact-status"></div> <p class="name">' + allUsers[i] + '</p> </div> </li>').appendTo($('#contacts ul'));
+                $('<li class="contact"> <div class="wrap"> <div class="contact-status"></div> <p class="name">' + allUsersNames[i] + '</p> </div> </li>').appendTo($('#contacts ul'));
         }
 
         $('.contact').click(function () {
@@ -144,6 +157,14 @@
 
     $(".messages").animate({ scrollTop: $(document).height() }, "fast");
 
+    $.get( "/api/getCACert", function( data ) {
+        CApem = data;
+    });
+
+    $.get( "/api/getUserKey", function( data ) {
+        privateKeyPem = data;
+    });
+
     function newMessage() {
         let message = $(".message-input input").val();
         $('.message-input input').val(null);
@@ -155,12 +176,19 @@
         if (currentChatUser !== null){
             // add message to content
             $('<li class="sent"><p>' + message + '</p></li>').appendTo($('.messages ul'));
-            // add message to array
-            usersMessages[currentChatUser].push({type: "sent", value: message});
             $(".messages").animate({ scrollTop: $(document).height() }, "fast");
-
-            // send message to user
-            socket.emit('message', {to: currentChatUser, data: message});
+            enc(message, currentChatUser).then(
+                (encryptedMessage) => {
+                    // add message to array
+                    usersMessages[currentChatUser].push({type: "sent", value: message});
+                    // send message to user
+                    socket.emit('message', {to: currentChatUser, data: encryptedMessage});
+                }, (err) => {
+                    usersMessages[currentChatUser].push({type: "sent", value: "There was a problem to encrypt the message: " + err});
+                    // add problem message
+                    $('<li class="sent"><p>There was a problem to encrypt the message: ' + err + '</p></li>').appendTo($('.messages ul'));
+                    $(".messages").animate({ scrollTop: $(document).height() }, "fast");
+                });
         }
     }
 
@@ -170,11 +198,20 @@
             let from = message["from"];
             // add message to array
             if (from in usersMessages) {
-                usersMessages[from].push({type: "replies", value: message["message"]});
-                $('.contact').each(function (index, obj) {
-                    if($(obj).find('p').text() === from)
-                        $(obj).find('.contact-status').addClass('waiting');
-                });
+                dec(message["message"], from).then(
+                    (ms) => {
+                        usersMessages[from].push({type: "replies", value: ms});
+                        $('.contact').each(function (index, obj) {
+                            if($(obj).find('p').text() === from)
+                                $(obj).find('.contact-status').addClass('waiting');
+                        });
+                    }, (err) => {
+                        usersMessages[from].push({type: "replies", value: "Message received. There was a problem decrypting the message: " + err});
+                        $('.contact').each(function (index, obj) {
+                            if($(obj).find('p').text() === from)
+                                $(obj).find('.contact-status').addClass('waiting');
+                        });
+                    });
             }
         }
     }
@@ -190,20 +227,27 @@
 
     function addMessage(message) {
         let from = message["from"];
-        let ms = message["data"];
+        let encryptedMs = message["data"];
 
-        usersMessages[from].push({type: "replies", value: ms});
+        dec(encryptedMs, from).then(
+            (ms) => {
+                usersMessages[from].push({type: "replies", value: ms});
 
-        if (from === currentChatUser){
-            $('<li class=replies><p>' + ms + '</p></li>').appendTo($('.messages ul'));
-            $(".messages").animate({ scrollTop: $(document).height() }, "fast");
-        }
-        else{
-            $('.contact').each(function (index, obj) {
-                if($(obj).find('p').text() === from)
-                    $(obj).find('.contact-status').addClass('waiting');
+                if (from === currentChatUser){
+                    $('<li class=replies><p>' + ms + '</p></li>').appendTo($('.messages ul'));
+                    $(".messages").animate({ scrollTop: $(document).height() }, "fast");
+                }
+                else{
+                    $('.contact').each(function (index, obj) {
+                        if($(obj).find('p').text() === from)
+                            $(obj).find('.contact-status').addClass('waiting');
+                    });
+                }
+            }, (err) => {
+                // add problem message
+                $('<li class=replies><p>There was a problem to decrypt the message: ' + err + '</p></li>').appendTo($('.messages ul'));
+                $(".messages").animate({ scrollTop: $(document).height() }, "fast");
             });
-        }
     }
 
     $(window).on('keydown', function(e) {
@@ -219,6 +263,170 @@
         if (index !== -1) {
             array.splice(index, 1);
         }
+    }
+
+    /*-------------- Contacts scrollbar --------------*/
+    $(document).ready(setContactsHeight);
+    $( "#sidepanel" ).change(setContactsHeight);
+
+    function setContactsHeight() {
+        $( "#contacts" ).height($( "#sidepanel" ).height() - $( "#search" ).height() - $("#logout-form").height() + 1);
+    }
+
+    /*-------------- Window resize --------------*/
+    $(document).ready(checkWindowSize);
+    $( window ).resize(checkWindowSize);
+
+    function checkWindowSize() {
+        if($(window).width() < 760){
+            $("#mask").show();
+            $("#frame").hide();
+        }
+        else {
+            $("#frame").show();
+            setContactsHeight();
+            $("#mask").hide();
+        }
+    }
+
+    /*-------------- Search users --------------*/
+    $(document).ready(function () {
+        $("#search-bar").keyup(searchList);
+    });
+
+    function searchList() {
+        let searchVal = $("#search-bar").val();
+
+        if(searchVal === "")
+        {
+            $('.contact').each(function (index, obj) {
+                $(obj).show();
+            });
+        }
+        else
+        {
+            $('.contact').each(function (index, obj) {
+                if($(obj).find('p').text().indexOf(searchVal) === 0)
+                    $(obj).show();
+                else
+                    $(obj).hide();
+            });
+        }
+    }
+
+    /*-------------- Enc and Dec --------------*/
+    function enc(ms, userTo) {
+        let pki = forge.pki;
+
+        return new Promise((resolve,reject) => {
+            // 1. Obtains Alice's certificate
+            let userPem = usersCerts[userTo];
+
+            // 2. Verify the certificate with the CA key
+            let verified = forge.pki.certificateFromPem(CApem).verify(forge.pki.certificateFromPem(userPem));
+            if(verified !== true)
+                reject("Certificate not verified");
+
+            let usernameInCert = null;
+            for(let i=0; i<forge.pki.certificateFromPem(userPem).subject.attributes.length; i++){
+                let cell = forge.pki.certificateFromPem(userPem).subject.attributes[i];
+                if (cell.hasOwnProperty("name") && cell["name"] === "commonName"){
+                    usernameInCert = cell["value"];
+                    break;
+                }
+            }
+            if(usernameInCert === null || usernameInCert !== userTo)
+                reject("Certificate not verified");
+
+            // 3. One-time symmetric session key is generated.
+            let sessionKey = forge.random.getBytesSync(16);
+            let iv = forge.random.getBytesSync(16);
+
+            // 4. Encryption operation is performed on the message using a session key.
+            let cipher = forge.cipher.createCipher('AES-CBC', sessionKey);
+            cipher.start({iv: iv});
+            cipher.update(forge.util.createBuffer(ms));
+            cipher.finish();
+            let encryptedMs = forge.util.encode64(cipher.output.getBytes());
+
+            // 5. Session key is encrypted using the Alice's public key.
+            let alicePublicKey = pki.certificateFromPem(userPem).publicKey;
+            let toEncrypt = forge.util.encodeUtf8(JSON.stringify({encMs: encryptedMs, sessionKey: sessionKey, iv: iv}));
+            let encSessionKeyAndEncMessage = forge.util.encode64(alicePublicKey.encrypt(toEncrypt));
+
+            // 6. Bob sign on the cipher with his private key.
+            let bobPrivateKey = pki.privateKeyFromPem(privateKeyPem);  // TODO: replace the way to get the private key Pem
+            let md = forge.md.sha1.create();
+            md.update(encSessionKeyAndEncMessage);
+            let signature = forge.util.encode64(bobPrivateKey.sign(md));
+
+            // include all params to send
+            resolve(JSON.stringify({encKeyAndEncMs: encSessionKeyAndEncMessage, sign: signature}));
+        });
+    }
+
+    function dec(ms, userFrom) {
+        let pki = forge.pki;
+        ms = JSON.parse(ms);
+
+        return new Promise((resolve,reject) => {
+            // 1. Obtains Alice's certificate
+            let userPem = usersCerts[userFrom];
+
+            // 2. Verify the certificate with the CA key
+            let verified = forge.pki.certificateFromPem(CApem).verify(forge.pki.certificateFromPem(userPem));
+            if(verified !== true)
+                reject("Certificate not verified: " + verified);
+
+            console.log(forge.pki.certificateFromPem(userPem).subject.attributes);
+
+            let usernameInCert = null;
+            for(let i=0; i<forge.pki.certificateFromPem(userPem).subject.attributes.length; i++){
+                let cell = forge.pki.certificateFromPem(userPem).subject.attributes[i];
+                if (cell.hasOwnProperty("name") && cell["name"] === "commonName"){
+                    usernameInCert = cell["value"];
+                    break;
+                }
+            }
+            if(usernameInCert === null || usernameInCert !== userFrom)
+                reject("Certificate not verified");
+
+            try {
+                // 3. Verify the signature on the message with Bob’s public key.
+                let bobPublicKey = pki.certificateFromPem(userPem).publicKey;
+                let md = forge.md.sha1.create();
+                md.update(ms["encKeyAndEncMs"]);
+                if (bobPublicKey.verify(md.digest().bytes(), forge.util.decode64(ms["sign"])) !== true)
+                    reject("Signature not verified.");
+            }
+            catch(err) {
+                reject("Signature not verified.");
+            }
+
+            // 4. Uses her private key to decrypt the symmetric key contained in the key encapsulation segment.
+            let alicePrivateKey = pki.privateKeyFromPem(privateKeyPem);  // TODO: replace the way to get the private key Pem
+
+            try {
+                let decrypted = alicePrivateKey.decrypt(forge.util.decode64(ms["encKeyAndEncMs"]));
+                let sessionKeyAndEncMessage = JSON.parse(forge.util.decodeUtf8(decrypted));
+
+                // 5. Uses this symmetric key to decrypt the message contained in the data encapsulation segment.
+                let encryptedMs = sessionKeyAndEncMessage["encMs"];
+                let sessionKey = sessionKeyAndEncMessage["sessionKey"];
+                let iv = sessionKeyAndEncMessage["iv"];
+                let decipher = forge.cipher.createDecipher('AES-CBC', sessionKey);
+                decipher.start({iv: iv});
+                decipher.update(forge.util.createBuffer(forge.util.decode64(encryptedMs)));
+                let result = decipher.finish();
+                if (result !== true)
+                    reject("AES decryption problem");
+
+                resolve(decipher.output.toString());
+            }
+            catch(err) {
+                reject("AES decryption problem");
+            }
+        });
     }
 
 </script>
