@@ -7,7 +7,7 @@
 
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="node_modules/bootstrap/dist/css/bootstrap.css">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="css/style.css">
 
     <title>Encrypted End-To-End Chat</title>
 </head>
@@ -17,6 +17,7 @@
     <div class="form">
         <form class="login-form" action="/login" method="post">
             <fieldset>
+                <div class="registrationFormAlert" id="Error"></div>
                 <input type="email" name="email" id="inEmail" class="form-control input-lg" placeholder="Email Address">
                 <input type="password" name="pass" id="inPassword" class="form-control input-lg" placeholder="Password">
                 <button type="submit">login</button>
@@ -26,8 +27,37 @@
     </div>
 </div>
 
+<script src="node_modules/jquery/dist/jquery.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
 <script src="node_modules/bootstrap/dist/js/bootstrap.js"></script>
+
+<script>
+    $(document).ready(function () {
+        // check if there is an error parameter to display
+        let result = findGetParameter("err");
+        if (result !== null)
+        {
+            $("#Error").html(result);
+        }
+    });
+
+    /**
+     * search for some parameter from the address line
+     * @param parameterName
+     * @returns the parameter value. if the param doesn't exists return null
+     */
+    function findGetParameter(parameterName) {
+        let result = null,
+            tmp = [];
+        let items = location.search.substr(1).split("&"); // get all the items from the address line
+        // pass over the params and compare to the wanted param
+        for (let index = 0; index < items.length; index++) {
+            tmp = items[index].split("=");
+            if (tmp[0] === parameterName) result = decodeURIComponent(tmp[1]);
+        }
+        return result;
+    }
+</script>
 
 </body>
 </html>

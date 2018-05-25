@@ -7,7 +7,7 @@
 
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="node_modules/bootstrap/dist/css/bootstrap.css">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="css/style.css">
 
     <title>Encrypted End-To-End Chat</title>
 </head>
@@ -17,6 +17,7 @@
     <div class="form">
         <form id="register" class="register-form" action="/register" method="post">
             <fieldset>
+                <div class="registrationFormAlert" id="Error"></div>
                 <input type="email" name="email" id="upEmail" class="form-control input-lg" placeholder="Email Address">
                 <input type="password" name="pass" id="upPassword" class="form-control input-lg" placeholder="Password">
                 <input type="password" name="confirmPass" id="confirmPassword" class="form-control input-lg" placeholder="Validate password">
@@ -32,73 +33,52 @@
 <script src="node_modules/jquery/dist/jquery.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
 <script src="node_modules/bootstrap/dist/js/bootstrap.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/node-forge@0.7.0/dist/forge.min.js"></script>
-
-<!-- crypto script -->
-
-<script>
-    /*
-    $('#create').click(function() {
-        let pki = forge.pki;
-
-        // set keys and certificate
-        let keys = pki.rsa.generateKeyPair(2048);
-        let userCert = pki.createCertificate();
-        userCert.publicKey = keys.publicKey;
-        userCert.serialNumber = '01';
-        userCert.validity.notBefore = new Date();
-        userCert.validity.notAfter = new Date();
-        userCert.validity.notAfter.setFullYear(userCert.validity.notBefore.getFullYear() + 1);
-
-        let username = $('#register').find("input[name='email']").val();
-
-        let attrs = [{
-            name: 'commonName',
-            value: username
-        }, {
-            name: 'countryName',
-            value: ''
-        }, {
-            shortName: 'ST',
-            value: ''
-        }, {
-            name: 'localityName',
-            value: ''
-        }, {
-            name: 'organizationName',
-            value: ''
-        }, {
-            shortName: 'OU',
-            value: ''
-        }];
-
-        userCert.setSubject(attrs);
-        let certPem = pki.certificateToPem(userCert);
-
-        $("#certPem").val(certPem);
-
-        return true;
-    });
-    */
-</script>
-
-<!-- password match script -->
 
 <script>
     $(document).ready(function () {
+        // Set a listener when password field change
         $("#upPassword, #confirmPassword").keyup(checkPasswordMatch);
+
+        // check if there is an error parameter to display
+        let result = findGetParameter("err");
+        if (result !== null)
+        {
+            $("#Error").html(result);
+        }
     });
 
+    /**
+     * search for some parameter from the address line
+     * @param parameterName
+     * @returns the parameter value. if the param doesn't exists return null
+     */
+    function findGetParameter(parameterName) {
+        let result = null,
+            tmp = [];
+        let items = location.search.substr(1).split("&"); // get all the items from the address line
+        // pass over the params and compare to the wanted param
+        for (let index = 0; index < items.length; index++) {
+            tmp = items[index].split("=");
+            if (tmp[0] === parameterName) result = decodeURIComponent(tmp[1]);
+        }
+        return result;
+    }
+
+    /**
+     * checks password match and display message to the user accordingly
+     * @returns {boolean} true/false - if the password match
+     */
     function checkPasswordMatch() {
+        // get the values from the vields
         let password = $("#upPassword").val();
         let confirmPassword = $("#confirmPassword").val();
 
-        if(password === "" && confirmPassword === "")
+        if(password === "" && confirmPassword === "")   // of they are empty
         {
-            $("#divCheckPasswordMatch").html("");
+            $("#divCheckPasswordMatch").html("");   // remove the message
             return false;
         }
-        else
+        else    // compare between them
         {
             if (password !== confirmPassword) {
                 $("#divCheckPasswordMatch").html("Passwords do not match!");

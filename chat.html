@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="node_modules/bootstrap/dist/css/bootstrap.css">
     <link rel='stylesheet prefetch' href='https://cdnjs.cloudflare.com/ajax/libs/meyer-reset/2.0/reset.min.css'>
     <link rel='stylesheet prefetch' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.2/css/font-awesome.min.css'>
-    <link rel="stylesheet" href="chatStyle.css">
+    <link rel="stylesheet" href="css/chatStyle.css">
 
     <link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet">
 
@@ -68,50 +68,51 @@
     let privateKeyPem = null;
 
     $(document).ready(function() {
-        socket = io.connect('localhost:4200');
-        // Add a connect listener
-        socket.on('connect', function () {
-            $("#frame").css("border", "1px solid #2ecc71");
+        socket = io.connect('localhost:4200');  // connect to the socket.io server
+        socket.on('connect', function () {  // Add a connect listener
+            $("#frame").css("border", "2px solid #2ecc71"); // set the frame color in green
         });
-        socket.on('usersList', function (data) {
+        socket.on('usersList', function (data) { // Add a users list get from the server listener
             updateUsersList(data);
         });
-        socket.on('waitingMessages', function (messages) {
+        socket.on('waitingMessages', function (messages) { // Add a waiting messages get from the server listener
             updateUsersMessagesArr(messages);
         });
-        // Add a disconnect listener
-        socket.on('disconnect', function () {
-            $("#frame").css("border", "1px solid #EF3B3A");
+        socket.on('disconnect', function () {   // Add a disconnect listener
+            $("#frame").css("border", "2px solid #EF3B3A"); // set the frame color in red
         });
-        socket.on('disconnectUser', function (user) {
+        socket.on('disconnectUser', function (user) { // Add an another user disconnect listener
             $('.contact').each(function (index, obj) {
                 if($(obj).find('p').text() === user)
-                    $(obj).find('.contact-status').removeClass('online');
+                    $(obj).find('.contact-status').removeClass('online'); // remove his class from online
             });
         });
-        socket.on('connectUser', function (user) {
+        socket.on('connectUser', function (user) { // Add an another user connect listener
             $('.contact').each(function (index, obj) {
                 if($(obj).find('p').text() === user)
-                    $(obj).find('.contact-status').addClass('online');
+                    $(obj).find('.contact-status').addClass('online');  // set his class as online
             });
         });
-        socket.on('message', function (message) {
-            addMessage(message);
+        socket.on('message', function (message) { // Add an get message listener
+            addMessage(message);    // add the message to the frame
         });
     });
 
+    /**
+     * Update the user list from the server
+     * @param users - The list received from the server
+     */
     function updateUsersList(users){
         usersCerts = {};
         let allUsersNames = [];
-        for (let i = 0; i < users.allUsers.length; i++) {
+        for (let i = 0; i < users.allUsers.length; i++) {   // insert the usernames and their certificates to the users array
             allUsersNames.push(users.allUsers[i]["username"]);
             usersCerts[users.allUsers[i]["username"]] = users.allUsers[i]["cert"];
         }
         let connectedUsers = users.connectedUsers;
-        $('.contact').each(function (index, obj) {
-            // run over all the list
+        $('.contact').each(function (index, obj) { // run over all the old list and compare tp the new one
             let username = $(obj).find('p').text();
-            // if user not on db
+            // if user not on db (not in the new one) remove him from the old list
             if (allUsersNames.indexOf(username) === -1) {
                 $(obj).remove();
                 if (username === $(".contact-profile").find('p').text()){
@@ -121,7 +122,7 @@
             }
             // if on db
             else {
-                // stay on list
+                // stay in list - set as checked
                 remove(allUsersNames, username);
                 // check if connected and update status
                 if (connectedUsers.indexOf(username) > -1)
@@ -132,30 +133,27 @@
         });
         // add all new users
         for (let i = 0; i < allUsersNames.length; i++) {
-            usersMessages[allUsersNames[i]] = [];
+            usersMessages[allUsersNames[i]] = [];   // allocate place for their messages
             if (connectedUsers.indexOf(allUsersNames[i]) > -1)
                 $('<li class="contact"> <div class="wrap"> <div class="contact-status online"></div> <p class="name">' + allUsersNames[i] + '</p> </div> </li>').appendTo($('#contacts ul'));
             else
                 $('<li class="contact"> <div class="wrap"> <div class="contact-status"></div> <p class="name">' + allUsersNames[i] + '</p> </div> </li>').appendTo($('#contacts ul'));
         }
 
-        $('.contact').click(function () {
-            // remove active from all users
-            $('.contact').each(function (index, obj) {
+        $('.contact').click(function () {   // add a click listener for each contact
+            $('.contact').each(function (index, obj) {  // remove active from all users
                 $(obj).removeClass("active");
             });
-            // add active for the clicked user
-            $(this).addClass("active");
-            $(this).find('.contact-status').removeClass("waiting");
-            // set this user as the content user
-            currentChatUser = $(this).find('p').text();
+            $(this).addClass("active"); // add active for the clicked user
+            $(this).find('.contact-status').removeClass("waiting"); // if there is waiting messages now we show them
+            currentChatUser = $(this).find('p').text(); // set this user as the content user
             $(".contact-profile").find('p').text(currentChatUser);
             $(".messages ul").empty();
-            getAndPresentMessages();
+            getAndPresentMessages();    // get and present the old conversation
         });
     }
 
-    $(".messages").animate({ scrollTop: $(document).height() }, "fast");
+    $(".messages").animate({ scrollTop: $(document).height() }, "fast");    // move dwon to the bottom of the conversation
 
     $.get( "/api/getCACert", function( data ) {
         CApem = data;
@@ -165,79 +163,88 @@
         privateKeyPem = data;
     });
 
+    /**
+     *  Handle a new message
+     */
     function newMessage() {
-        let message = $(".message-input input").val();
-        $('.message-input input').val(null);
-        if($.trim(message) === '') {
+        let message = $(".message-input input").val();  // get the message from the message bar
+        $('.message-input input').val(null);    // clean the message bar
+        if($.trim(message) === '') {    // remove whitespaces in the start and end
             return false;
         }
-        // add the message time
-        message = ("0" + d.getHours()).slice(-2) + ':' + ("0" + d.getMinutes()).slice(-2) + "<br>" + message;
-        if (currentChatUser !== null){
-            // add message to content
-            $('<li class="sent"><p>' + message + '</p></li>').appendTo($('.messages ul'));
-            $(".messages").animate({ scrollTop: $(document).height() }, "fast");
-            enc(message, currentChatUser).then(
+        message = ("0" + d.getHours()).slice(-2) + ':' + ("0" + d.getMinutes()).slice(-2) + "<br>" + message;   // add the message time
+        if (currentChatUser !== null){  // if there is a chosen user
+            $('<li class="sent"><p>' + message + '</p></li>').appendTo($('.messages ul')); // add message to content
+            $(".messages").animate({ scrollTop: $(document).height() }, "fast");    // scroll down to the end
+            enc(message, currentChatUser).then( // encrypt message
                 (encryptedMessage) => {
-                    // add message to array
-                    usersMessages[currentChatUser].push({type: "sent", value: message});
-                    // send message to user
-                    socket.emit('message', {to: currentChatUser, data: encryptedMessage});
-                }, (err) => {
-                    usersMessages[currentChatUser].push({type: "sent", value: "There was a problem to encrypt the message: " + err});
+                    usersMessages[currentChatUser].push({type: "sent", value: message});    // add message to conversation array
+                    socket.emit('message', {to: currentChatUser, data: encryptedMessage});  // send message to user
+                }, (err) => {   // if there was an encryption problem
                     // add problem message
+                    usersMessages[currentChatUser].push({type: "sent", value: "There was a problem to encrypt the message: " + err});
                     $('<li class="sent"><p>There was a problem to encrypt the message: ' + err + '</p></li>').appendTo($('.messages ul'));
                     $(".messages").animate({ scrollTop: $(document).height() }, "fast");
                 });
         }
     }
 
+    /**
+     * Handle waiting messages from users
+     */
     function updateUsersMessagesArr(messages) {
-        for (let i = 0; i < messages.length; i++){
+        for (let i = 0; i < messages.length; i++){  // pass over all the messages
             let message = messages[i];
             let from = message["from"];
-            // add message to array
-            if (from in usersMessages) {
-                dec(message["message"], from).then(
+            if (from in usersMessages) {    // if user on the users list
+                dec(message["message"], from).then( // decrypt the message
                     (ms) => {
+                        // add message to conversation array and to the conversation frame
                         usersMessages[from].push({type: "replies", value: ms});
                         $('.contact').each(function (index, obj) {
                             if($(obj).find('p').text() === from)
                                 $(obj).find('.contact-status').addClass('waiting');
                         });
-                    }, (err) => {
+                    }, (err) => {   // if there was a problem
+                        // add an error message
                         usersMessages[from].push({type: "replies", value: "Message received. There was a problem decrypting the message: " + err});
                         $('.contact').each(function (index, obj) {
                             if($(obj).find('p').text() === from)
-                                $(obj).find('.contact-status').addClass('waiting');
+                                $(obj).find('.contact-status').addClass('waiting'); // set user class for waiting messages
                         });
                     });
             }
         }
     }
 
+    /**
+     * Present old conversation for clicked user
+     */
     function getAndPresentMessages() {
         let messagesArr = usersMessages[currentChatUser];
-        for (let i = 0; i < messagesArr.length; i++){
+        for (let i = 0; i < messagesArr.length; i++){   // pass over all the messages and add to the conversation array
             let message = messagesArr[i];
             $('<li class=' + message["type"] + '><p>' + message["value"] + '</p></li>').appendTo($('.messages ul'));
         }
-        $(".messages").animate({ scrollTop: $(document).height() }, "fast");
+        $(".messages").animate({ scrollTop: $(document).height() }, "fast");    // scroll down to the conversation bottom
     }
 
+    /**
+     * Handle message when connected
+     */
     function addMessage(message) {
         let from = message["from"];
         let encryptedMs = message["data"];
 
         dec(encryptedMs, from).then(
             (ms) => {
-                usersMessages[from].push({type: "replies", value: ms});
+                usersMessages[from].push({type: "replies", value: ms}); // add message to conversation array
 
-                if (from === currentChatUser){
+                if (from === currentChatUser){  // if that user is chosen
                     $('<li class=replies><p>' + ms + '</p></li>').appendTo($('.messages ul'));
                     $(".messages").animate({ scrollTop: $(document).height() }, "fast");
                 }
-                else{
+                else{   // if it's not chosen
                     $('.contact').each(function (index, obj) {
                         if($(obj).find('p').text() === from)
                             $(obj).find('.contact-status').addClass('waiting');
@@ -250,13 +257,19 @@
             });
     }
 
+    /**
+     * Enter listener for send message
+     */
     $(window).on('keydown', function(e) {
-        if (e.which === 13) {
-            newMessage();
+        if ($(".message-input input").is(":focus") && e.which === 13) { // check if presed the enter key and the message bar is focused
+            newMessage();   // send the message
             return false;
         }
     });
 
+    /**
+     * Remove element from array
+     */
     function remove(array, element) {
         const index = array.indexOf(element);
 
@@ -269,7 +282,7 @@
     $(document).ready(setContactsHeight);
     $( "#sidepanel" ).change(setContactsHeight);
 
-    function setContactsHeight() {
+    function setContactsHeight() {  // calculate the contacts height on sidepanel change
         $( "#contacts" ).height($( "#sidepanel" ).height() - $( "#search" ).height() - $("#logout-form").height() + 1);
     }
 
@@ -277,8 +290,8 @@
     $(document).ready(checkWindowSize);
     $( window ).resize(checkWindowSize);
 
-    function checkWindowSize() {
-        if($(window).width() < 760){
+    function checkWindowSize() {    // check that there is min 760 px width for the frame
+        if($(window).width() < 760){    // if not - display a message
             $("#mask").show();
             $("#frame").hide();
         }
@@ -291,10 +304,10 @@
 
     /*-------------- Search users --------------*/
     $(document).ready(function () {
-        $("#search-bar").keyup(searchList);
+        $("#search-bar").keyup(searchList); // Filter list on any search val change
     });
 
-    function searchList() {
+    function searchList() { // Filter relevant results from the list of contacts
         let searchVal = $("#search-bar").val();
 
         if(searchVal === "")
@@ -327,16 +340,16 @@
             if(verified !== true)
                 reject("Certificate not verified");
 
-            let usernameInCert = null;
-            for(let i=0; i<forge.pki.certificateFromPem(userPem).subject.attributes.length; i++){
-                let cell = forge.pki.certificateFromPem(userPem).subject.attributes[i];
-                if (cell.hasOwnProperty("name") && cell["name"] === "commonName"){
-                    usernameInCert = cell["value"];
-                    break;
-                }
-            }
-            if(usernameInCert === null || usernameInCert !== userTo)
-                reject("Certificate not verified");
+//            let usernameInCert = null;
+//            for(let i=0; i<forge.pki.certificateFromPem(userPem).subject.attributes.length; i++){
+//                let cell = forge.pki.certificateFromPem(userPem).subject.attributes[i];
+//                if (cell.hasOwnProperty("name") && cell["name"] === "commonName"){
+//                    usernameInCert = cell["value"];
+//                    break;
+//                }
+//            }
+//            if(usernameInCert === null || usernameInCert !== userTo)
+//                reject("Certificate not verified");
 
             // 3. One-time symmetric session key is generated.
             let sessionKey = forge.random.getBytesSync(16);
@@ -378,18 +391,16 @@
             if(verified !== true)
                 reject("Certificate not verified: " + verified);
 
-            console.log(forge.pki.certificateFromPem(userPem).subject.attributes);
-
-            let usernameInCert = null;
-            for(let i=0; i<forge.pki.certificateFromPem(userPem).subject.attributes.length; i++){
-                let cell = forge.pki.certificateFromPem(userPem).subject.attributes[i];
-                if (cell.hasOwnProperty("name") && cell["name"] === "commonName"){
-                    usernameInCert = cell["value"];
-                    break;
-                }
-            }
-            if(usernameInCert === null || usernameInCert !== userFrom)
-                reject("Certificate not verified");
+//            let usernameInCert = null;
+//            for(let i=0; i<forge.pki.certificateFromPem(userPem).subject.attributes.length; i++){
+//                let cell = forge.pki.certificateFromPem(userPem).subject.attributes[i];
+//                if (cell.hasOwnProperty("name") && cell["name"] === "commonName"){
+//                    usernameInCert = cell["value"];
+//                    break;
+//                }
+//            }
+//            if(usernameInCert === null || usernameInCert !== userFrom)
+//                reject("Certificate not verified");
 
             try {
                 // 3. Verify the signature on the message with Bob’s public key.
