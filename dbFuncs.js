@@ -238,7 +238,11 @@ function getUserCert(username){
                 if (err)
                     reject(err);
                 else{
-                    resolve(rows);
+                    let certs = [];
+                    Object.keys(rows).forEach(key => { // convert the lines of the db to messages array
+                        certs.push(rows[key].cert);
+                    });
+                    resolve(certs[0]);  // There is just one with that username
                 }
             });
         });

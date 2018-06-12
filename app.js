@@ -115,13 +115,13 @@ app.get("/chat", function (req, res) {
  */
 app.post('/register', function(req, res) {
     let cert = req.connection.getPeerCertificate(); // get the certificate of the session to store them in the db
-    // let certUsername = cert.subject["CN"];
-    // if (certUsername !== req.body.email){
-    //     console.log("register error: wrong certificate");
-    //     res.redirect('/register');
-    // }
-    // else
-    // {
+    let certUsername = cert.subject["CN"];
+    if (certUsername !== req.body.email){
+        console.log("register error: wrong certificate");
+        res.redirect('/register?err=' + 'Wrong certificates');
+    }
+    else
+    {
         dbFuncs.createUser(req.body.email,req.body.pass,cert).then( // try to create user
             () => {
                 // sets a cookie with the user's info
@@ -132,20 +132,20 @@ app.post('/register', function(req, res) {
                 console.log("register error: " + err);
                 res.redirect('/register?err=' + err);
             });
-    // }
+    }
 });
 /**
  * User login request
  */
 app.post('/login', function(req, res) {
-    // let cert = req.connection.getPeerCertificate();
-    // let certUsername = cert.subject["CN"];
-    // if (certUsername !== req.body.email){
-    //     console.log("signin error: wrong certificate");
-    //     res.redirect('/login');
-    // }
-    // else
-    // {
+    let cert = req.connection.getPeerCertificate();
+    let certUsername = cert.subject["CN"];
+    if (certUsername !== req.body.email){
+        console.log("signin error: wrong certificate");
+        res.redirect('/login?err=' + 'Wrong certificates');
+    }
+    else
+    {
         // check if the user already connected in the connected users array
         let found = false;
         for( let i=0; i < users.length; i++ ){
@@ -172,7 +172,7 @@ app.post('/login', function(req, res) {
                     res.redirect('/login?err=' + err);
                 });
         }
-    // }
+    }
 });
 /**
  * User logout request
@@ -298,12 +298,14 @@ app.get("/api/getCACert", function (req, res) {
     res.send(fs.readFileSync(__dirname + "/CA/server_cert.pem", 'utf8'));
 });
 
-app.get("/api/getUserKey", function (req, res) {
-    res.send(fs.readFileSync(__dirname + "/certificates/alice/alice_key.pem", 'utf8'));
-});
-
 app.get("/api/getUserCert", function (req, res) {
-    res.send(fs.readFileSync(__dirname + "/certificates/alice/alice_cert.pem", 'utf8'));
+    let cert = req.connection.getPeerCertificate();
+    let username = cert.subject["CN"];
+    dbFuncs.getUserCert(username).then(
+        (cert) => {
+            res.send(cert);
+        }, (err) => {
+        });
 });
 
 // ---------------- Help functions ----------------

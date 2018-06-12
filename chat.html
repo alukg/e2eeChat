@@ -10,10 +10,14 @@
     <link rel='stylesheet prefetch' href='https://cdnjs.cloudflare.com/ajax/libs/meyer-reset/2.0/reset.min.css'>
     <link rel='stylesheet prefetch' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.2/css/font-awesome.min.css'>
     <link rel="stylesheet" href="css/chatStyle.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 
     <link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet">
 
     <title>Encrypted End-To-End Chat</title>
+
+    <!-- For drag & drop -->
+    <script>(function(e,t,n){let r=e.querySelectorAll("html")[0];r.className=r.className.replace(/(^|\s)no-js(\s|$)/,"$1js$2")})(document,window,0);</script>
 </head>
 <body>
 
@@ -41,6 +45,21 @@
             <p></p>
         </div>
         <div class="messages">
+            <form class="box" method="post" action="" enctype="multipart/form-data">
+                <div class="box__input">
+                    <input class="box__file" type="file" name="files[]" id="file" data-multiple-caption="{count} files selected" multiple />
+                    <br><br><br><br>
+                    <i class="material-icons md-48">
+                        vpn_key
+                    </i>
+                    <br><br>
+                    <label for="file"><span class="box__dragndrop">Drag your private key here</span></label>
+                    <button class="box__button" type="submit">Upload</button>
+                    <br><br><br><br><br><br>
+                    <span class="box__error">Error! Incompatible keys<span></span>.<br><br><br><br></span>
+                </div>
+                <span class="box__uploading">Uploading&hellip;<span></span>.<br><br><br><br></span>
+            </form>
             <ul>
 
             </ul>
@@ -58,6 +77,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
 <script src="node_modules/bootstrap/dist/js/bootstrap.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/node-forge@0.7.0/dist/forge.min.js"></script>
+
 <script>
     let socket = null;
     let currentChatUser = null;
@@ -66,9 +86,10 @@
     let usersCerts = [];
     let CApem = null;
     let privateKeyPem = null;
+    let publicKeyPem = null;
 
-    $(document).ready(function() {
-        socket = io.connect('localhost:4200');  // connect to the socket.io server
+    function startChat() {
+        socket = io.connect('10.100.102.11:4200');  // connect to the socket.io server
         socket.on('connect', function () {  // Add a connect listener
             $("#frame").css("border", "2px solid #2ecc71"); // set the frame color in green
         });
@@ -96,7 +117,20 @@
         socket.on('message', function (message) { // Add an get message listener
             addMessage(message);    // add the message to the frame
         });
-    });
+
+        $(".messages").animate({ scrollTop: $(document).height() }, "fast");    // move down to the bottom of the conversation
+
+        /**
+         * Enter listener for send message
+         */
+        $(window).on('keydown', function(e) {
+            if ($(".message-input input").is(":focus") && e.which === 13) { // check if presed the enter key and the message bar is focused
+                newMessage();   // send the message
+                return false;
+            }
+        });
+
+    }
 
     /**
      * Update the user list from the server
@@ -153,14 +187,14 @@
         });
     }
 
-    $(".messages").animate({ scrollTop: $(document).height() }, "fast");    // move dwon to the bottom of the conversation
+    $(".messages").animate({ scrollTop: $(document).height() }, "fast");    // move down to the bottom of the conversation
 
     $.get( "/api/getCACert", function( data ) {
         CApem = data;
     });
 
-    $.get( "/api/getUserKey", function( data ) {
-        privateKeyPem = data;
+    $.get( "/api/getUserCert", function( data ) {
+        publicKeyPem = data;
     });
 
     /**
@@ -258,16 +292,6 @@
     }
 
     /**
-     * Enter listener for send message
-     */
-    $(window).on('keydown', function(e) {
-        if ($(".message-input input").is(":focus") && e.which === 13) { // check if presed the enter key and the message bar is focused
-            newMessage();   // send the message
-            return false;
-        }
-    });
-
-    /**
      * Remove element from array
      */
     function remove(array, element) {
@@ -327,6 +351,103 @@
         }
     }
 
+    /*-------------- Drag and Drop --------------*/
+    let isAdvancedUpload = function() {
+        let div = document.createElement('div');
+        return (('draggable' in div) || ('ondragstart' in div && 'ondrop' in div)) && 'FormData' in window && 'FileReader' in window;
+    }();
+
+    let $form = $('.box');
+
+    function checkKeys(pk) {
+        let pki = forge.pki;
+
+        let privateKey = null;
+        let publicKey = null;
+
+        // check if it's really a RSA keys
+        try {
+            privateKey = pki.privateKeyFromPem(pk);
+            publicKey = pki.certificateFromPem(publicKeyPem).publicKey;
+        }
+        catch(err) {
+            return false;
+        }
+
+        // Try to sign and verify, if true, the keys compatible
+        let md = forge.md.sha1.create();
+        md.update('check', 'utf8');
+        let signature = privateKey.sign(md);
+
+        try {
+            let verified = publicKey.verify(md.digest().bytes(), signature);
+            return verified === true;
+        }
+        catch(err) {
+            return false;
+        }
+    }
+
+    function uploadFile(files, $form) {
+        let file = files[0];
+        let reader = new FileReader();
+        reader.onload = function(event) {   // success handler
+            let privateKey = event.target.result;
+            let res = checkKeys(privateKey);    // check keypair
+            if(res === true)
+            {
+                $form.removeClass('is-uploading');
+                privateKeyPem = privateKey;    // set as private key
+                $form.hide();   // hide upload form
+                startChat();    // connect to chat
+            }
+            else
+            {   // faile handler
+                $form.addClass('is-error').removeClass('is-uploading');
+            }
+        };
+        reader.onerror = function(event) {
+            $form.addClass('is-error').removeClass('is-uploading');
+        };
+        reader.readAsText(file);    // upload file
+        return false;
+    }
+
+    if (isAdvancedUpload) { // drag & drop upload
+        $form.addClass('has-advanced-upload');
+
+        let droppedFiles = false;
+
+        $form.on('drag dragstart dragend dragover dragenter dragleave drop', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        })
+            .on('dragover dragenter', function() {
+                $form.addClass('is-dragover');
+            })
+            .on('dragleave dragend drop', function() {
+                $form.removeClass('is-dragover');
+            })
+            .on('drop', function(e) {   // when drag & drop is supported
+                droppedFiles = e.originalEvent.dataTransfer.files;
+                $form.trigger('submit');
+            })
+            .on('submit', function(e) { // submission
+                if ($form.hasClass('is-uploading')) return false;
+
+                $form.addClass('is-uploading').removeClass('is-error');
+
+                uploadFile(droppedFiles, $form);    // handle file uploading
+
+                return false;
+            });
+    }
+
+    $(".box__file").on('change', function(e) { // when drag & drop is NOT supported
+        $form.trigger('submit');
+    });
+
+
     /*-------------- Enc and Dec --------------*/
     function enc(ms, userTo) {
         let pki = forge.pki;
@@ -340,16 +461,16 @@
             if(verified !== true)
                 reject("Certificate not verified");
 
-//            let usernameInCert = null;
-//            for(let i=0; i<forge.pki.certificateFromPem(userPem).subject.attributes.length; i++){
-//                let cell = forge.pki.certificateFromPem(userPem).subject.attributes[i];
-//                if (cell.hasOwnProperty("name") && cell["name"] === "commonName"){
-//                    usernameInCert = cell["value"];
-//                    break;
-//                }
-//            }
-//            if(usernameInCert === null || usernameInCert !== userTo)
-//                reject("Certificate not verified");
+            let usernameInCert = null;
+            for(let i=0; i<forge.pki.certificateFromPem(userPem).subject.attributes.length; i++){
+                let cell = forge.pki.certificateFromPem(userPem).subject.attributes[i];
+                if (cell.hasOwnProperty("name") && cell["name"] === "commonName"){
+                    usernameInCert = cell["value"];
+                    break;
+                }
+            }
+            if(usernameInCert === null || usernameInCert !== userTo)
+                reject("Certificate not verified");
 
             // 3. One-time symmetric session key is generated.
             let sessionKey = forge.random.getBytesSync(16);
@@ -368,7 +489,7 @@
             let encSessionKeyAndEncMessage = forge.util.encode64(alicePublicKey.encrypt(toEncrypt));
 
             // 6. Bob sign on the cipher with his private key.
-            let bobPrivateKey = pki.privateKeyFromPem(privateKeyPem);  // TODO: replace the way to get the private key Pem
+            let bobPrivateKey = pki.privateKeyFromPem(privateKeyPem);
             let md = forge.md.sha1.create();
             md.update(encSessionKeyAndEncMessage);
             let signature = forge.util.encode64(bobPrivateKey.sign(md));
@@ -391,16 +512,16 @@
             if(verified !== true)
                 reject("Certificate not verified: " + verified);
 
-//            let usernameInCert = null;
-//            for(let i=0; i<forge.pki.certificateFromPem(userPem).subject.attributes.length; i++){
-//                let cell = forge.pki.certificateFromPem(userPem).subject.attributes[i];
-//                if (cell.hasOwnProperty("name") && cell["name"] === "commonName"){
-//                    usernameInCert = cell["value"];
-//                    break;
-//                }
-//            }
-//            if(usernameInCert === null || usernameInCert !== userFrom)
-//                reject("Certificate not verified");
+            let usernameInCert = null;
+            for(let i=0; i<forge.pki.certificateFromPem(userPem).subject.attributes.length; i++){
+                let cell = forge.pki.certificateFromPem(userPem).subject.attributes[i];
+                if (cell.hasOwnProperty("name") && cell["name"] === "commonName"){
+                    usernameInCert = cell["value"];
+                    break;
+                }
+            }
+            if(usernameInCert === null || usernameInCert !== userFrom)
+                reject("Certificate not verified");
 
             try {
                 // 3. Verify the signature on the message with Bob’s public key.
@@ -415,7 +536,7 @@
             }
 
             // 4. Uses her private key to decrypt the symmetric key contained in the key encapsulation segment.
-            let alicePrivateKey = pki.privateKeyFromPem(privateKeyPem);  // TODO: replace the way to get the private key Pem
+            let alicePrivateKey = pki.privateKeyFromPem(privateKeyPem);
 
             try {
                 let decrypted = alicePrivateKey.decrypt(forge.util.decode64(ms["encKeyAndEncMs"]));

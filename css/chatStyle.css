@@ -32,7 +32,7 @@ body {
     height: 92vh;
     min-height: 300px;
     max-height: 720px;
-    border: 1px solid #9da0a3;
+    border: 2px solid #EF3B3A;
     background: #fbffff;
     box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
     display: none;
@@ -208,11 +208,12 @@ body {
     color: black;
     padding-left: 30px;
 }
+
 #frame .content .messages {
     height: auto;
     min-height: calc(100% - 80px);
     max-height: calc(100% - 80px);
-    overflow-y: scroll;
+    overflow-y: auto;
     overflow-x: hidden;
 }
 /*@media screen and (max-width: 735px) {*/
@@ -296,4 +297,57 @@ body {
 /*}*/
 #frame .content .message-input .wrap input:focus {
     outline: none;
+}
+
+/* upload box */
+
+.box__dragndrop,
+.box__uploading,
+.box__success,
+.box__error {
+    display: none;
+}
+.box {
+    background-color: white;
+    outline: 2px dashed #bbb9bb;
+    outline-offset: -20px;
+}
+.box.has-advanced-upload {
+    background-color: white;
+    outline: 2px dashed #bbb9bb;
+    outline-offset: -20px;
+}
+.box.has-advanced-upload .box__dragndrop {
+    display: inline;
+}
+.box.is-dragover {
+    background-color: rgb(64, 171, 254);
+}
+.box.is-uploading .box__input {
+    visibility: hidden;
+}
+.box.is-uploading .box__uploading {
+    display: block;
+}
+.box.is-error .box__input {
+    visibility: visible;
+}
+.box.is-error .box__error {
+    display: block;
+    color: #9a0007;
+}
+.box__button {
+    display: none;
+}
+.no-js .box__button {
+    display: block;
+}
+.box__input {
+    text-align: center;
+}
+.box__file {
+    display: none;
+}
+.box.is-uploading .box__uploading {
+    text-align: center;
 }
